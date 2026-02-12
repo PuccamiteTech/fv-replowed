@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use App\Support\SafeUnserialize;
 
 class CleanNeighborData extends Command
 {
@@ -22,7 +23,7 @@ class CleanNeighborData extends Command
         $cleaned = 0;
         
         foreach ($records as $record) {
-            $data = unserialize($record->meta_value);
+            $data = SafeUnserialize::arrayOrNull($record->meta_value);
             
             if (is_array($data)) {
                 // Remove duplicates

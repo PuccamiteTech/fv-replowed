@@ -105,7 +105,7 @@ class UserService{
             $row = $result->fetch_assoc();
             
             // Unserialize it
-            $flags = unserialize($row["seenFlags"]);
+            $flags = safe_unserialize_array($row["seenFlags"], false);
 
             // Extract the actual flag from the request
             $toAdd = $request->params[0];

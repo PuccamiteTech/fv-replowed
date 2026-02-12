@@ -1,5 +1,6 @@
 <?php
     require_once AMFPHP_ROOTPATH . "Helpers/globals.php";
+    require_once AMFPHP_ROOTPATH . "Helpers/serialization.php";
     /**
      * Get User Metadata
      * 
@@ -91,7 +92,7 @@
                 $item = $result->fetch_assoc();
                 $db->destroy();
 
-                return unserialize($item["data"]);
+                return safe_unserialize($item["data"]);
             }
 
             $items_str = file_get_contents($_SERVER['DOCUMENT_ROOT'] . "/props/items.json");
@@ -130,7 +131,7 @@
                 $worldData["type"] = $row["type"];
                 $worldData["sizeX"] = $row["sizeX"];
                 $worldData["sizeY"] = $row["sizeY"];
-                $worldData["objectsArray"] = unserialize($row["objects"]);
+                $worldData["objectsArray"] = safe_unserialize($row["objects"]);
                 $worldData["creation"] = $row["created_at"];
                 $worldData["messageManager"] = array();
             }else{
@@ -313,7 +314,7 @@
             'type' => $type,
             'sizeX' => $size,
             'sizeY' => $size,
-            'objectsArray' => unserialize($newWorld),
+            'objectsArray' => safe_unserialize($newWorld),
             'messageManager' => array(),
             'creation' => date("Y-m-d h:i:s")
         );

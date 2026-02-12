@@ -359,7 +359,7 @@ class Player {
                     'featureCredits' => "10",
                     'incrementalFriendChecks' => array(),
                     'friendRewards' => null,
-                    'seenFlags' => unserialize($row['seenFlags']), //tutorial flag
+                    'seenFlags' => safe_unserialize_array($row['seenFlags'], false), //tutorial flag
                     'itemFlags' => array("giftcard" => ""),
                     'featureFrequency' => array(
                         "AvatarIndicatorLastInteraction" => 10,
@@ -414,7 +414,7 @@ class Player {
             $stmt->execute();
             $result = $stmt->get_result();
             $row = $result->fetch_assoc();
-            $this->avatarData = ($row["value"] != null) ? unserialize($row["value"]) : null;
+            $this->avatarData = ($row["value"] != null) ? safe_unserialize($row["value"], false) : null;
             $this->db->destroy();
         }
 
@@ -575,7 +575,7 @@ class Player {
         $currNeighbors = get_meta($this->uid, 'current_neighbors');
 
         if ($currNeighbors){
-            $currNeighborUids = unserialize($currNeighbors);
+            $currNeighborUids = safe_unserialize_array($currNeighbors, false);
 
             foreach ($currNeighborUids as $neighbor) {
                 $neighborData[] = $this->getPlayerData($neighbor);
@@ -590,7 +590,7 @@ class Player {
         if (!$currNeighbors){
             return [];
         }
-        return unserialize($currNeighbors);
+        return safe_unserialize_array($currNeighbors, false);
     }
 
     public function setPendingNeighbors($pid){
@@ -599,7 +599,7 @@ class Player {
 
         $currNeighbors = get_meta($pid, 'pending_neighbors');
         if ($currNeighbors){
-            $res_uns = unserialize($currNeighbors);
+            $res_uns = safe_unserialize_array($currNeighbors, false);
             if (!in_array($this->uid, $res_uns)){
                 $res_uns[] = $this->uid;
             }
@@ -617,7 +617,7 @@ class Player {
         if (!$pendingNeighbors){
             return [];
         }
-        return unserialize($pendingNeighbors);
+        return safe_unserialize_array($pendingNeighbors, false);
     }
 
     public function getPlayerData($uid){

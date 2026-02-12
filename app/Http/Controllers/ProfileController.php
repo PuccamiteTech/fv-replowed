@@ -13,6 +13,7 @@ use App\Models\UserMeta;
 use App\Models\UserAvatar;
 use App\Models\UserWorld;
 use App\Models\PlayerMeta;
+use App\Support\SafeUnserialize;
 
 class ProfileController extends Controller
 {
@@ -65,9 +66,9 @@ class ProfileController extends Controller
             PlayerMeta::where('uid', '=', $user->uid)->delete();
             
             $neighborEntries->each(function (PlayerMeta $entry) use ($user) {
-                $neighbors = unserialize($entry->meta_value, ['allowed_classes' => false]);
+                $neighbors = SafeUnserialize::arrayOrNull($entry->meta_value);
 
-                if (!is_array($neighbors)) {
+                if ($neighbors === null) {
                     return;
                 }
 

@@ -15,6 +15,8 @@
  * @package Amfphp_Plugins_Monitor
  * @author Ariel Sommeria-klein
  */
+require_once AMFPHP_ROOTPATH . "Helpers/serialization.php";
+
 class AmfphpMonitorService {
     /**
      * path to log. 
@@ -83,7 +85,7 @@ class AmfphpMonitorService {
         //use associative array to avoid duplicating time  names, then return keys.
         $timeNamesAssoc = array();
         foreach($exploded as $serializedRecord){
-            $record = unserialize($serializedRecord); 
+            $record = safe_unserialize($serializedRecord);
             if(!$record){
                 continue;
             }

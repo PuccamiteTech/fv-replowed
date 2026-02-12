@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Support\SafeUnserialize;
 
 class NeighborController extends Controller
 {
@@ -18,7 +19,7 @@ class NeighborController extends Controller
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
         
-        $neighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta) : [];
+        $neighborIds = SafeUnserialize::arrayOrEmpty($currentNeighborsMeta);
         
         $neighbors = [];
         
@@ -40,7 +41,7 @@ class NeighborController extends Controller
             // Group data by neighbor
             $groupedNeighbors = [];
             foreach ($neighborsQuery as $row) {
-                $avatarData = @unserialize($row->avatar_value, ['allowed_classes' => false]);
+                $avatarData = SafeUnserialize::value($row->avatar_value);
                 $gender = is_array($avatarData) && isset($avatarData['gender'])
                     ? $avatarData['gender']
                     : 'male';
@@ -97,7 +98,7 @@ class NeighborController extends Controller
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
         
-        $neighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta) : [];
+        $neighborIds = SafeUnserialize::arrayOrEmpty($currentNeighborsMeta);
         
         // Add new neighbor if doesn't exist
         if (!in_array($neighborId, $neighborIds)) {
@@ -137,7 +138,7 @@ class NeighborController extends Controller
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
         
-        $neighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta) : [];
+        $neighborIds = SafeUnserialize::arrayOrEmpty($currentNeighborsMeta);
         
         // Remove neighbor
         $neighborIds = array_values(array_filter($neighborIds, function($id) use ($neighborId) {
@@ -171,7 +172,7 @@ class NeighborController extends Controller
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
         
-        $currentNeighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta) : [];
+        $currentNeighborIds = SafeUnserialize::arrayOrEmpty($currentNeighborsMeta);
         $currentNeighborIds[] = $user->uid; // Exclude the user itself
         
         // Fetch users who are not neighbors
@@ -191,7 +192,7 @@ class NeighborController extends Controller
         // Group data
         $groupedUsers = [];
         foreach ($potentialNeighbors as $row) {
-            $avatarData = @unserialize($row->avatar_value, ['allowed_classes' => false]);
+            $avatarData = SafeUnserialize::value($row->avatar_value);
             $gender = is_array($avatarData) && isset($avatarData['gender'])
                 ? $avatarData['gender']
                 : 'f';
@@ -220,7 +221,7 @@ class NeighborController extends Controller
             ->where('meta_key', 'pending_neighbors')
             ->value('meta_value');
         
-        $pendingIds = $pendingNeighborsMeta ? unserialize($pendingNeighborsMeta) : [];
+        $pendingIds = SafeUnserialize::arrayOrEmpty($pendingNeighborsMeta);
         
         $pendingNeighbors = [];
         
@@ -240,7 +241,7 @@ class NeighborController extends Controller
             
             $groupedNeighbors = [];
             foreach ($neighborsQuery as $row) {
-                $avatarData = @unserialize($row->avatar_value, ['allowed_classes' => false]);
+                $avatarData = SafeUnserialize::value($row->avatar_value);
                 $gender = is_array($avatarData) && isset($avatarData['gender'])
                     ? $avatarData['gender']
                     : 'male';
@@ -280,7 +281,7 @@ class NeighborController extends Controller
             ->where('meta_key', 'pending_neighbors')
             ->value('meta_value');
         
-        $pendingIds = $pendingMeta ? unserialize($pendingMeta) : [];
+        $pendingIds = SafeUnserialize::arrayOrEmpty($pendingMeta);
 
         $pendingIds = array_values(array_filter($pendingIds, function($id) use ($neighborId) {
             return $id != $neighborId;
@@ -306,7 +307,7 @@ class NeighborController extends Controller
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
         
-        $currentIds = $currentMeta ? unserialize($currentMeta) : [];
+        $currentIds = SafeUnserialize::arrayOrEmpty($currentMeta);
         
         if (!in_array($neighborId, $currentIds)) {
             $currentIds[] = $neighborId;
@@ -336,7 +337,7 @@ class NeighborController extends Controller
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
         
-        $neighborCurrentIds = $neighborCurrentMeta ? unserialize($neighborCurrentMeta) : [];
+        $neighborCurrentIds = SafeUnserialize::arrayOrEmpty($neighborCurrentMeta);
         
         if (!in_array($user->uid, $neighborCurrentIds)) {
             $neighborCurrentIds[] = $user->uid;
@@ -374,7 +375,7 @@ class NeighborController extends Controller
             ->where('meta_key', 'pending_neighbors')
             ->value('meta_value');
         
-        $pendingIds = $pendingMeta ? unserialize($pendingMeta) : [];
+        $pendingIds = SafeUnserialize::arrayOrEmpty($pendingMeta);
 
         // Remove rejected neighbor
         $pendingIds = array_values(array_filter($pendingIds, function($id) use ($neighborId) {
@@ -416,7 +417,7 @@ class NeighborController extends Controller
             ->where('meta_key', 'pending_neighbors')
             ->value('meta_value');
         
-        $pendingIds = $pendingMeta ? unserialize($pendingMeta) : [];
+        $pendingIds = SafeUnserialize::arrayOrEmpty($pendingMeta);
         
         if (!in_array($user->uid, $pendingIds)) {
             $pendingIds[] = $user->uid;
