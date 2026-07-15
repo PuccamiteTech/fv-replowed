@@ -12,13 +12,7 @@ class AssetsController extends Controller
 {
 
     public function checkAssets(){
-        if (is_dir(public_path('farmville/assets/hashed/assets'))){
-            return true;
-        } else {
-            return false;
-        }
-
-        return false;
+        return is_dir(public_path('farmville/assets/hashed/assets'));
     }
 
     public function downloadAssets(Request $request){        
