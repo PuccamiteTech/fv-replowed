@@ -33,14 +33,7 @@ class DiscordStatus extends Command
             return 0;
         }
 
-        try {
-            $ip = Http::get('https://api.ipify.org')->body();
-        } catch (\Exception $e) {
-            $this->error("You appear to be offline.");
-            return 1;
-        }
-
-        $status = strtoupper($this->argument('status') ?? $this->detectStatus($ip));
+        $status = strtoupper($this->argument('status') ?? $this->detectStatus());
 
         if (!in_array($status, ['ONLINE', 'MAINTENANCE', 'DOWN'])) {
             $this->error("Invalid status. Use: ONLINE, MAINTENANCE, or DOWN");
@@ -48,7 +41,7 @@ class DiscordStatus extends Command
         }
 
         $messageId = $this->getStoredMessageId();
-        $healthCheck = $this->checkHealth($ip);
+        $healthCheck = $this->checkHealth();
         $serverHealth = $this->getServerHealth();
         $embed = $this->buildEmbed($status, $healthCheck, $serverHealth);
 
@@ -72,10 +65,10 @@ class DiscordStatus extends Command
         return 1;
     }
 
-    private function detectStatus(string $ip): string
+    private function detectStatus(): string
     {
         try {
-            $response = Http::timeout(5)->get("http://{$ip}");
+            $response = Http::timeout(5)->get(url('up'));
 
             if ($response->successful()) {
                 return 'ONLINE';
@@ -90,11 +83,11 @@ class DiscordStatus extends Command
         }
     }
 
-    private function checkHealth(string $ip): array
+    private function checkHealth(): array
     {
         try {
             $start = microtime(true);
-            $response = Http::timeout(5)->get('http://{$ip}');
+            $response = Http::timeout(5)->get(url('up'));
             $latency = round((microtime(true) - $start) * 1000);
 
             $dbPing = null;
@@ -208,7 +201,7 @@ class DiscordStatus extends Command
         return [
             'embeds' => [[
                 'title' => "{$emojis[$status]} FarmVille Host Status: {$status}",
-                'description' => "**Join:** {$appUrl}\n**Downloads:** {$appUrl}",
+                'description' => "**Join:** {$appUrl}",
                 'color' => $colors[$status],
                 'fields' => [
                     [
