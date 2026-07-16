@@ -60,6 +60,20 @@ return [
             'report' => false,
         ],
 
+        'b2' => [
+            'driver' => 's3',
+            'key' => env('B2_ACCESS_KEY_ID'),
+            'secret' => env('B2_SECRET_ACCESS_KEY'),
+            'region' => env('B2_REGION', 'us-west-004'),
+            'bucket' => env('B2_BUCKET'),
+            'url' => env('B2_URL'),
+            'endpoint' => env('B2_ENDPOINT'),
+            'use_path_style_endpoint' => false,
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*
