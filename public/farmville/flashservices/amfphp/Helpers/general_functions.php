@@ -127,10 +127,15 @@
                 // no point in validating further
                 // if the row's contents are invalid, loading SHOULD fail
                 $row = $result->fetch_assoc();
+
+                // populate objects if missing, retaining other data
+                if (empty($worldData["objectsArray"] = unserialize($row["objects"]))){
+                    $worldData["objectsArray"] = createWorldObjects();
+                }
+
                 $worldData["type"] = $row["type"];
                 $worldData["sizeX"] = $row["sizeX"];
                 $worldData["sizeY"] = $row["sizeY"];
-                $worldData["objectsArray"] = unserialize($row["objects"]);
                 $worldData["creation"] = $row["created_at"];
                 $worldData["messageManager"] = array();
             }else{
@@ -143,16 +148,12 @@
         return $worldData;
     }
 
-    function createWorldByType($uid, $type = "farm" ){
-        global $db;
-
-        $size = 50; // matches the schema default
-        $messageManager = "";
-
+    function createWorldObjects()
+    {
         // Unix timestamp in milliseconds
         $plantTime = (float) ((time() * 1000) - 172800000); // pretend 2 days elapsed
-        
-        $newWorld = serialize(array(
+
+        return array(
             0 => 
             (object) array(
                 'plantTime' => $plantTime,
@@ -297,7 +298,16 @@
                 'id' => 6,
                 'itemName' => NULL,
             ),
-        ));
+        );
+    }
+
+    function createWorldByType($uid, $type = "farm"){
+        global $db;
+
+        $size = 50; // matches the schema default
+        $messageManager = "";
+        
+        $newWorld = serialize(createWorldObjects());
         
         // only checking if the serialization was successful JUST IN CASE
         if (is_numeric($uid) && is_string($type) && $type !== "" && is_string($newWorld)){
