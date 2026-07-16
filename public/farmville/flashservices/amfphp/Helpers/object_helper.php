@@ -1,7 +1,5 @@
 <?php
 
-namespace App\Helpers;
-
 class ObjectHelper
 {
     public static function getPosition($obj): array

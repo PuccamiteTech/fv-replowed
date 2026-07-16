@@ -1,7 +1,5 @@
 <?php
 
-namespace App\Helpers;
-
 class JsonHelper
 {
     public static function safeEncode($value): ?string
