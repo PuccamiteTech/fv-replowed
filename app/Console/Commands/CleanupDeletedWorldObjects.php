@@ -13,14 +13,14 @@ class CleanupDeletedWorldObjects extends Command
      *
      * @var string
      */
-    protected $signature = 'world:cleanup-deleted {--days=7 : Number of days after soft delete to hard delete}';
+    protected $signature = 'world:cleanup-deleted {--days=7 : Number of days since soft delete to hard delete}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Hard delete world_objects that have been soft-deleted (deleted=1) for more than 7 days';
+    protected $description = 'Hard delete world_objects that have been soft-deleted (deleted=1) for at least N days';
 
     /**
      * Execute the console command.
@@ -36,9 +36,16 @@ class CleanupDeletedWorldObjects extends Command
         foreach ($worlds as $world) {
             // Hard delete objects where deleted=1 and updated_at is older than cutoff
             $all = unserialize($world->objects);
-            if ($all) {
+            if (is_array($all)) {
                 $kept = array_filter($all, function ($object) use ($cutoffDate) {
-                    return !($object->deleted && (Carbon::createFromTimestampMs($object->plantTime)->lt($cutoffDate)));
+                    if (!$object->deleted) {
+                        return true;
+                    }
+                    elseif (!is_numeric($object->plantTime) || is_nan($object->plantTime)) {
+                        return false;
+                    }
+
+                    return Carbon::createFromTimestampMs($object->plantTime)->gt($cutoffDate);
                 });
                 
                 DB::table('userworlds')->where('id', $world->id)->update(['objects' => serialize($kept)]);
@@ -46,7 +53,7 @@ class CleanupDeletedWorldObjects extends Command
             }
         }
 
-        $this->info("Hard deleted {$deletedCount} world objects that were soft-deleted more than {$days} days ago.");
+        $this->info("Hard deleted {$deletedCount} world objects that were soft-deleted at least {$days} days ago.");
 
         return 0;
     }
