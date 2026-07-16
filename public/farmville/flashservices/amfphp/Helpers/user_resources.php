@@ -6,9 +6,14 @@ class UserResources{
     public const GOLD_FIELD = "gold";
     public const CASH_FIELD = "cash";
     public const XP_FIELD = "xp";
+    public const ENERGY_FIELD = "energy";
+    public const ENERGYMAX_FIELD = "energyMax";
     public const GOLD_MAX = 999_999_999; // specified by the engine
     public const CASH_MAX = 99_999; // specified by the engine
     public const XP_MAX = 2_147_400_000; // minimum points required to reach the highest level
+    public const LEVEL_UP_CASH_MAX = 250;
+
+    private static $resourceCache = [];
 
     private static function addResource($uid, $amount, $field, $max){
         global $db;
@@ -22,6 +27,7 @@ class UserResources{
         $stmt->bind_param("iis", $amount, $max, $uid);
         $stmt->execute();
         $db->destroy();
+        self::invalidateCache($uid);
         return true;
     }
 
@@ -37,7 +43,30 @@ class UserResources{
         $stmt->bind_param("is", $amount, $uid);
         $stmt->execute();
         $db->destroy();
+        self::invalidateCache($uid);
         return true;
+    }
+
+    private static function getResource($uid, $field){
+        global $db;
+
+        if (!is_numeric($uid)){
+            return false;
+        }
+        elseif (isset($resourceCache[$uid][$field]))
+        {
+            return $resourceCache[$uid][$field];
+        }
+
+        $conn = $db->getDb();
+        $stmt = $conn->prepare("SELECT $field FROM usermeta WHERE uid = ?");
+        $stmt->bind_param("s", $uid);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $row = $result->fetch_assoc();
+        $db->destroy();
+
+        return ($resourceCache[$uid][$field] = $row[$field]);
     }
 
     public static function addGold($uid, $amount){
@@ -49,7 +78,33 @@ class UserResources{
     }
 
     public static function addXp($uid, $amount){
-        return self::addResource($uid, $amount, self::XP_FIELD, self::XP_MAX);
+        $currentXp = self::getXp($uid);
+        $currentLevel = self::deriveLevel($currentXp);
+        $newLevel = self::deriveLevel($currentXp + $amount);
+        $result = self::addResource($uid, $amount, self::XP_FIELD, self::XP_MAX);
+
+        if ($result && $newLevel > $currentLevel){
+            $cashToAdd = 0;
+
+            if ($currentLevel < self::LEVEL_UP_CASH_MAX){
+                $levelsBeforeCap = min($newLevel, self::LEVEL_UP_CASH_MAX) - $currentLevel;
+                $cashToAdd += $levelsBeforeCap * 3;
+            }
+            elseif ($newLevel > self::LEVEL_UP_CASH_MAX){
+                $levelsAfterCap = $newLevel - max($currentLevel, self::LEVEL_UP_CASH_MAX);
+                $cashToAdd += $levelsAfterCap;
+            }
+
+            if ($cashToAdd > 0){
+                return self::addCash($uid, $cashToAdd);
+            }
+        }
+
+        return $result;
+    }
+
+    public static function addEnergy($uid, $amount){
+        return self::addResource($uid, $amount, self::ENERGY_FIELD, self::getEnergyMax($uid));
     }
 
     public static function removeGold($uid, $amount){
@@ -58,5 +113,70 @@ class UserResources{
 
     public static function removeCash($uid, $amount){
         return self::removeResource($uid, $amount, self::CASH_FIELD);
+    }
+
+    public static function removeEnergy($uid, $amount){
+        return self::removeResource($uid, $amount, self::ENERGY_FIELD);
+    }
+
+    public static function getGold($uid){
+        return self::getResource($uid, self::GOLD_FIELD);
+    }
+
+    public static function getCash($uid){
+        return self::getResource($uid, self::CASH_FIELD);
+    }
+
+    public static function getXp($uid){
+        return self::getResource($uid, self::XP_FIELD);
+    }
+
+    public static function getEnergy($uid){
+        return self::getResource($uid, self::ENERGY_FIELD);
+    }
+
+    public static function getEnergyMax($uid){
+        return self::getResource($uid, self::ENERGYMAX_FIELD);
+    }
+
+    public static function deriveLevel($xp){
+        static $thresholds = [
+            1=>0, 2=>15, 3=>30, 4=>70, 5=>140, 6=>250, 7=>400, 8=>600, 9=>850, 10=>1150,
+            11=>1500, 12=>1900, 13=>2400, 14=>3000, 15=>3700, 16=>4500, 17=>5400, 18=>6400,
+            19=>7500, 20=>8700, 21=>10000, 22=>11500, 23=>13500, 24=>16000, 25=>19000,
+            26=>22500, 27=>26500, 28=>31000, 29=>36000, 30=>42000, 31=>49000, 32=>57000,
+            33=>65000, 34=>74000, 35=>83000, 36=>93000, 37=>103000, 38=>113000, 39=>123000,
+            40=>133000, 41=>143000, 42=>153000, 43=>163000, 44=>173000, 45=>183000,
+            46=>193000, 47=>203000, 48=>213000, 49=>223000, 50=>233000, 51=>243000,
+            52=>253000, 53=>263000, 54=>273000, 55=>283000, 56=>293000, 57=>303000,
+            58=>313000, 59=>323000, 60=>333000, 61=>343000, 62=>353000, 63=>363000,
+            64=>373000, 65=>383000, 66=>393000, 67=>403000, 68=>413000, 69=>423000,
+            70=>433000, 71=>443500, 72=>454500, 73=>466000, 74=>478000, 75=>490500,
+            76=>504000, 77=>518500, 78=>534000, 79=>550500, 80=>568000, 81=>587000,
+            82=>607500, 83=>629500, 84=>653000, 85=>678500, 86=>706000, 87=>735500,
+            88=>767000, 89=>801000, 90=>837500, 91=>876500, 92=>918500, 93=>963500,
+            94=>1012000, 95=>1064000, 96=>1120000, 97=>1180000, 98=>1244500, 99=>1313500,
+            100=>1387500
+        ];
+
+        $xp = (int) $xp;
+        $level = 1;
+
+        for ($i = 100; $i >= 1; $i--) {
+            if ($xp >= $thresholds[$i]) {
+                $level = $i;
+                break;
+            }
+        }
+
+        if ($xp >= 1500000) {
+            $level = 100 + (int) floor(($xp - 1500000) / 100000) + 1;
+        }
+
+        return $level;
+    }
+
+    public static function invalidateCache($uid){
+        unset(self::$resourceCache[$uid]);
     }
 }
