@@ -11,7 +11,6 @@ class UserResources{
     public const GOLD_MAX = 999_999_999; // specified by the engine
     public const CASH_MAX = 99_999; // specified by the engine
     public const XP_MAX = 2_147_400_000; // minimum points required to reach the highest level
-    public const LEVEL_UP_CASH_MAX = 250;
 
     private static $resourceCache = [];
 
@@ -84,20 +83,7 @@ class UserResources{
         $result = self::addResource($uid, $amount, self::XP_FIELD, self::XP_MAX);
 
         if ($result && $newLevel > $currentLevel){
-            $cashToAdd = 0;
-
-            if ($currentLevel < self::LEVEL_UP_CASH_MAX){
-                $levelsBeforeCap = min($newLevel, self::LEVEL_UP_CASH_MAX) - $currentLevel;
-                $cashToAdd += $levelsBeforeCap * 3;
-            }
-            elseif ($newLevel > self::LEVEL_UP_CASH_MAX){
-                $levelsAfterCap = $newLevel - max($currentLevel, self::LEVEL_UP_CASH_MAX);
-                $cashToAdd += $levelsAfterCap;
-            }
-
-            if ($cashToAdd > 0){
-                return self::addCash($uid, $cashToAdd);
-            }
+            return self::addCash($uid, $newLevel - $currentLevel);
         }
 
         return $result;
