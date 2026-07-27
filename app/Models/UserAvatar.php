@@ -14,7 +14,7 @@ class UserAvatar extends Model
     protected $table = 'useravatars';
 
     protected $fillable = [
-        'uid', 'value'
+        'uid', 'value', 'unlocks'
     ];
 
     // Assuming 'uid' is the foreign key for the user ID from the registration

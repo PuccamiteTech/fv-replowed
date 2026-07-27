@@ -8,6 +8,7 @@ class Player {
     private $pData = array();
     private $worldData = array();
     private $avatarData = array();
+    private $avatarUnlocks = array();
     private $db = null;
 
     public function __construct($id) {
@@ -421,6 +422,23 @@ class Player {
         return $this->avatarData;
     }
 
+    public function getAvatarUnlocks(){
+        $this->avatarUnlocks = null;
+
+        if (is_numeric($this->uid)){
+            $conn = $this->db->getDb();
+            $stmt = $conn->prepare("SELECT unlocks FROM useravatars WHERE uid = ?");
+            $stmt->bind_param("s", $this->uid);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            $this->avatarUnlocks = ($row["unlocks"] != null) ? unserialize($row["unlocks"]) : null;
+            $this->db->destroy();
+        }
+
+        return $this->avatarUnlocks;
+    }
+
     /*
     private function plow($newObj, $currObjects){
         // Does it already exist? (Maybe planted thing that we harvested and now we plow again)
@@ -544,6 +562,17 @@ class Player {
             $conn = $this->db->getDb();
             $stmt = $conn->prepare("UPDATE useravatars SET value = ? WHERE uid = ?");
             $stmt->bind_param("ss", $attribs, $this->uid);
+            $stmt->execute();
+            $this->db->destroy();
+        }
+    }
+
+    public function setAvatarUnlocks($unlocks){
+        if (is_numeric($this->uid) && is_array($unlocks)){
+            $unlocks = serialize($unlocks);
+            $conn = $this->db->getDb();
+            $stmt = $conn->prepare("UPDATE useravatars SET unlocks = ? WHERE uid = ?");
+            $stmt->bind_param("ss", $unlocks, $this->uid);
             $stmt->execute();
             $this->db->destroy();
         }
