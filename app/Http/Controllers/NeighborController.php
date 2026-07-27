@@ -30,7 +30,6 @@ class NeighborController extends Controller
                 ->whereIn('u.uid', $neighborIds)
                 ->select(
                     'u.uid',
-                    'u.name',
                     'um.firstName',
                     'um.lastName',
                     'ua.value as avatar_value'
@@ -48,7 +47,7 @@ class NeighborController extends Controller
                 if (!isset($groupedNeighbors[$row->uid])) {
                     $groupedNeighbors[$row->uid] = [
                         'uid' => $row->uid,
-                        'name' => $row->name,
+                        'name' => $row->firstName . ' ' . $row->lastName,
                         'first_name' => $row->firstName,
                         'last_name' => $row->lastName,
                         'sex' => $gender == 'male' ? 'm' : 'f',
@@ -181,7 +180,6 @@ class NeighborController extends Controller
             ->whereNotIn('u.uid', $currentNeighborIds)
             ->select(
                 'u.uid',
-                'u.name',
                 'um.firstName',
                 'um.lastName',
                 'ua.value as avatar_value'
@@ -199,7 +197,7 @@ class NeighborController extends Controller
             if (!isset($groupedUsers[$row->uid])) {
                 $groupedUsers[$row->uid] = [
                     'uid' => $row->uid,
-                    'name' => $row->name,
+                    'name' => $row->firstName . ' ' . $row->lastName,
                     'first_name' => $row->firstName,
                     'last_name' => $row->lastName,
                     'sex' => $gender,
@@ -231,7 +229,6 @@ class NeighborController extends Controller
                 ->whereIn('u.uid', $pendingIds)
                 ->select(
                     'u.uid',
-                    'u.name',
                     'um.firstName',
                     'um.lastName',
                     'ua.value as avatar_value'
@@ -248,7 +245,7 @@ class NeighborController extends Controller
                 if (!isset($groupedNeighbors[$row->uid])) {
                     $groupedNeighbors[$row->uid] = [
                         'uid' => $row->uid,
-                        'name' => $row->name,
+                        'name' => $row->firstName . ' ' . $row->lastName,
                         'first_name' => $row->firstName,
                         'last_name' => $row->lastName,
                         'sex' => $gender == 'male' ? 'm' : 'f',

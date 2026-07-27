@@ -314,6 +314,8 @@
                             }
                         }
 
+                        let pendingNeighborIds = [];
+
                         // Load pending requests
                         function loadPendingRequests() {
                             fetch('/neighbors/pending')
@@ -321,13 +323,22 @@
                                 .then(data => {
                                     const pendingList = document.getElementById('pendingList');
                                     const pendingCount = document.getElementById('pendingCount');
-                                    
+
                                     pendingCount.textContent = data.count;
-                                    
+                                    pendingNeighborIds = data.pending.map(n => n.uid);
+
                                     if (data.pending.length === 0) {
                                         pendingList.innerHTML = '<p style="text-align: center; color: #7F8C8D; padding: 20px; font-style: italic;">📭 No pending requests</p>';
                                     } else {
-                                        pendingList.innerHTML = data.pending.map(neighbor => {
+                                        const acceptAllBtn = `
+                                            <div style="margin-bottom: 15px; text-align: right;">
+                                                <button onclick="acceptAllNeighbors()" style="background: linear-gradient(180deg, #10b981, #059669); color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600;">
+                                                    ✓ Accept All (${data.pending.length})
+                                                </button>
+                                            </div>
+                                        `;
+
+                                        const neighborsList = data.pending.map(neighbor => {
                                             const initial = neighbor.first_name.charAt(0).toUpperCase();
                                             return `
                                                 <div class="neighbor-item">
@@ -345,12 +356,94 @@
                                                 </div>
                                             `;
                                         }).join('');
+
+                                        pendingList.innerHTML = acceptAllBtn + neighborsList;
                                     }
                                 })
                                 .catch(error => {
                                     console.error('Error loading neighbor requests:', error);
                                     document.getElementById('pendingList').innerHTML = '<p style="text-align: center; color: #E74C3C;">❌ Error loading neighbor requests</p>';
                                 });
+                        }
+
+                        async function acceptAllNeighbors() {
+                            if (pendingNeighborIds.length === 0) return;
+
+                            if (!confirm(`Accept all neighbor requests?`)) return;
+
+                            const pendingList = document.getElementById('pendingList');
+                            pendingList.innerHTML = '<p style="text-align: center; color: #3498DB; padding: 20px;">⏳ Accepting all neighbors...</p>';
+
+                            let successCount = 0;
+                            let failCount = 0;
+
+                            for (const neighborId of pendingNeighborIds) {
+                                try {
+                                    const response = await fetch('/neighbors/accept', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                        },
+                                        body: JSON.stringify({ neighbor_id: neighborId })
+                                    });
+                                    const data = await response.json();
+                                    if (data.success) {
+                                        successCount++;
+                                    } else {
+                                        failCount++;
+                                    }
+                                } catch (error) {
+                                    console.error('Error accepting neighbor:', neighborId, error);
+                                    failCount++;
+                                }
+                            }
+
+                            loadPendingRequests();
+                            loadCurrentNeighbors();
+                            updateNotificationBadge();
+
+                            let message = `✅ Accepted ${successCount} neighbor(s)`;
+                            if (failCount > 0) {
+                                message += `\n❌ Failed: ${failCount}`;
+                            }
+                            message += '\n\nReload the game now to see your new neighbors in the neighbor bar?';
+
+                            if (confirm(message)) {
+                                location.reload();
+                            }
+                        }
+
+                        function acceptNeighbor(neighborId) {
+                            if (!confirm('Do you want to accept this neighbor request?')) return;
+
+                            fetch('/neighbors/accept', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify({ neighbor_id: neighborId })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    loadPendingRequests();
+                                    loadCurrentNeighbors();
+                                    updateNotificationBadge();
+
+                                    const shouldReload = confirm('✅ ' + data.message + '\n\nReload the game now to see your new neighbor in the neighbor bar?');
+                                    if (shouldReload) {
+                                        location.reload();
+                                    }
+                                } else {
+                                    alert('❌ Error accepting neighbor');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('❌ Error processing neighbor request');
+                            });
                         }
 
                         // Load current neighbors
@@ -448,7 +541,7 @@
                         // Accept neighbor
                         function acceptNeighbor(neighborId) {
                             if (!confirm('Do you want to accept this neighbor request?')) return;
-                            
+
                             fetch('/neighbors/accept', {
                                 method: 'POST',
                                 headers: {
@@ -460,10 +553,14 @@
                             .then(response => response.json())
                             .then(data => {
                                 if (data.success) {
-                                    alert('✅ ' + data.message);
                                     loadPendingRequests();
-                                    // Reload page to update game
-                                    setTimeout(() => location.reload(), 1500);
+                                    loadCurrentNeighbors();
+                                    updateNotificationBadge();
+
+                                    const shouldReload = confirm('✅ ' + data.message + '\n\nReload the game now to see your new neighbor in the neighbor bar?');
+                                    if (shouldReload) {
+                                        location.reload();
+                                    }
                                 } else {
                                     alert('❌ Error accepting neighbor');
                                 }

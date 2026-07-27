@@ -583,7 +583,7 @@ class Player {
 
         if (is_numeric($this->uid)){
             $conn = $this->db->getDb();
-            $stmt = $conn->prepare("SELECT us.uid as uid, us.name as name, um.firstName as firstname, um.lastName as lastname FROM users AS us INNER JOIN usermeta AS um ON us.uid = um.uid WHERE us.uid <> ?");
+            $stmt = $conn->prepare("SELECT us.uid as uid, um.firstName as firstname, um.lastName as lastname FROM users AS us INNER JOIN usermeta AS um ON us.uid = um.uid WHERE us.uid <> ?");
             $stmt->bind_param("s", $this->uid);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -652,7 +652,7 @@ class Player {
     public function getPlayerData($uid){
         if (is_numeric($uid)){
             $conn = $this->db->getDb();
-            $stmt = $conn->prepare("SELECT us.uid AS uid, us.name AS name, um.firstName AS firstname, um.lastName AS lastname, um.xp AS xp, ua.value AS avatar FROM users AS us INNER JOIN usermeta AS um ON us.uid = um.uid INNER JOIN useravatars AS ua ON us.uid = ua.uid WHERE us.uid = ?");
+            $stmt = $conn->prepare("SELECT us.uid AS uid, um.firstName AS firstname, um.lastName AS lastname, um.xp AS xp, ua.value AS avatar FROM users AS us INNER JOIN usermeta AS um ON us.uid = um.uid INNER JOIN useravatars AS ua ON us.uid = ua.uid WHERE us.uid = ?");
             $stmt->bind_param("s", $uid);
             $stmt->execute();
             $result = $stmt->get_result();
@@ -662,7 +662,7 @@ class Player {
             // if the row's contents are invalid, loading SHOULD fail
             return (object) [
                 "uid" => $row['uid'],
-                "name" => $row['name'],
+                "name" => $row['firstname'] . ' ' . $row['lastname'],
                 "first_name" => $row['firstname'],
                 "last_name" => $row['lastname'],
                 "xp" => $row['xp'],
