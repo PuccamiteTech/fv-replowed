@@ -58,6 +58,7 @@ return new class extends Migration
             $table->mediumText('seenFlags')->default('a:1:{s:13:"ftue_complete";b:0;}');
             $table->boolean('isNew')->default(true);
             $table->boolean('firstDay')->default(true);
+            $table->timestamp('next_free_gift_at')->useCurrent();
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
         });

@@ -17,7 +17,11 @@ class UserMeta extends Model
     protected $table = 'usermeta';
 
     protected $fillable = [
-        'uid', 'firstName', 'lastName', 'xp', 'cash', 'gold', 'energyMax', 'energy', 'seenFlags', 'isNew', 'firstDay'
+        'uid', 'firstName', 'lastName', 'xp', 'cash', 'gold', 'energyMax', 'energy', 'seenFlags', 'isNew', 'firstDay', 'next_free_gift_at'
+    ];
+
+    protected $casts = [
+        'next_free_gift_at' => 'datetime'
     ];
 
     // Assuming 'uid' is the foreign key for the user ID from the registration

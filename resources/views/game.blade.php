@@ -5,6 +5,17 @@
         </h2>
     </x-slot>
 
+    <!-- Daily Gift Modal -->
+    <div id="dailyGiftModal" class="daily-gift-modal">
+        <div class="daily-gift-dialog">
+            <h2>Daily Gift!</h2>
+            <div class="daily-gift-amount"><span id="giftCashAmount">0</span> Farm Cash</div>
+            <div class="daily-gift-gold"><span id="giftGoldAmount">0</span> Coins</div>
+            <p>Come back tomorrow for another gift!</p>
+            <button class="btn-accept-gift" onclick="acceptDailyGift()">Accept</button>
+        </div>
+    </div>
+
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
@@ -48,6 +59,70 @@
                             var appFriendIds = {!! json_encode($neighborIds ?? []) !!};
                             return appFriendIds;
                         }
+
+                        function checkDailyGiftStatus() {
+                            fetch('/daily-gift/status', {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                const btn = document.getElementById('dailyGiftBtn');
+                                if (!data.canClaim) {
+                                    btn.classList.add('claimed');
+                                    btn.onclick = null;
+                                }
+                            })
+                            .catch(error => console.error('Error checking daily gift status:', error));
+                        }
+
+                        function claimDailyGift() {
+                            const btn = document.getElementById('dailyGiftBtn');
+                            if (btn.classList.contains('claimed')) return;
+
+                            fetch('/daily-gift/claim', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    document.getElementById('giftCashAmount').textContent = data.cashAmount;
+                                    document.getElementById('giftGoldAmount').textContent = data.goldAmount;
+                                    document.getElementById('dailyGiftModal').style.display = 'flex';
+                                    btn.classList.add('claimed');
+                                    btn.onclick = null;
+                                } else {
+                                    alert(data.message || 'Unable to claim gift');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error claiming daily gift:', error);
+                                alert('Error claiming gift. Please try again.');
+                            });
+                        }
+
+                        function acceptDailyGift() {
+                            document.getElementById('dailyGiftModal').style.display = 'none';
+                            try {
+                                var flash = FarmNS.getFlash();
+                                if (flash && flash.refreshBalance) {
+                                    flash.refreshBalance();
+                                }
+                            } catch (e) {
+                                console.log('Could not refresh Flash balance:', e);
+                            }
+                        }
+
+                        document.addEventListener('DOMContentLoaded', function() {
+                            checkDailyGiftStatus();
+                        });
 
                         function addNeighborById(neighborId) {
                             fetch('/neighbors/add', {
@@ -1034,6 +1109,73 @@
                                 visibility: visible;
                                 opacity: 1;
                             }
+
+                            .daily-gift-modal {
+                                display: none;
+                                position: fixed;
+                                top: 0; left: 0;
+                                width: 100%; height: 100%;
+                                background: rgba(0, 0, 0, 0.7);
+                                z-index: 10000;
+                                justify-content: center;
+                                align-items: center;
+                            }
+                            .daily-gift-dialog {
+                                background: linear-gradient(135deg, #1e3a1e, #2d5016);
+                                border: 3px solid #fbbf24;
+                                border-radius: 15px;
+                                padding: 30px 40px;
+                                text-align: center;
+                                box-shadow: 0 0 30px rgba(251, 191, 36, 0.5);
+                                animation: dialog-pop 0.3s ease-out;
+                            }
+                            .daily-gift-dialog h2 {
+                                color: #fbbf24;
+                                font-size: 24px;
+                                margin-bottom: 20px;
+                                font-family: 'Segoe UI', sans-serif;
+                            }
+                            .daily-gift-amount {
+                                font-size: 36px;
+                                font-weight: bold;
+                                color: #10b981;
+                                text-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+                                margin: 15px 0 5px 0;
+                            }
+                            .daily-gift-amount span {
+                                color: #10b981;
+                            }
+                            .daily-gift-gold {
+                                font-size: 36px;
+                                font-weight: bold;
+                                color: #fbbf24;
+                                text-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+                                margin: 5px 0 15px 0;
+                            }
+                            .daily-gift-gold span {
+                                color: #fbbf24;
+                            }
+                            .daily-gift-dialog p {
+                                color: white;
+                                font-size: 16px;
+                                margin-bottom: 25px;
+                                font-family: 'Segoe UI', sans-serif;
+                            }
+                            .btn-accept-gift {
+                                background: linear-gradient(180deg, #fbbf24, #f59e0b);
+                                color: #1e3a1e;
+                                border: none;
+                                padding: 12px 40px;
+                                border-radius: 8px;
+                                font-size: 16px;
+                                font-weight: bold;
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            }
+                            .btn-accept-gift:hover {
+                                background: linear-gradient(180deg, #fcd34d, #fbbf24);
+                                transform: scale(1.05);
+                            }
                         </style>
 
                         <img src="img/logo.png" style="width: 250px;" />
@@ -1048,7 +1190,7 @@
                             <!-- GAME BAR -->
                             <div style="overflow-x:hidden;overflow-y:hidden;width:1018px;height:40px;background-image:url(/img/game_bar/ecb8d4257f9af29b38f1a10c4ccb322c4ebb2e8c.png);background-color: transparent; background-position: 324px 20px; background-repeat: no-repeat; margin: 0px; padding: 0px; ">
                                 <div style="position:relative;float:left;height:40px;background-image:url(/img/game_bar/ecb8d4257f9af29b38f1a10c4ccb322c4ebb2e8c.png);background-color: transparent; background-position: 0px 20px; background-repeat: no-repeat; border-width: 0px; border-style: none; margin: 0px; padding: 0px 0px 0px 5px; border-color: white; ">
-                                    <a href="#" title="Free Gifts" style="color:rgb(59, 89, 152);cursor:pointer;width:91px;background-image:url(/img/game_bar/c7ae80613dbb3a1aa848ddf6fb3baea29c233ec6.png);background-color: transparent; text-decoration:none;float:left;height:27px;margin: 11px 0px 0px 4px; " target="_blank"></a>
+                                    <a href="#" title="Free Gifts" onclick="claimDailyGift(); return false;" id="dailyGiftBtn" style="color:rgb(59, 89, 152);cursor:pointer;width:91px;background-image:url(/img/game_bar/c7ae80613dbb3a1aa848ddf6fb3baea29c233ec6.png);background-color: transparent; text-decoration:none;float:left;height:27px;margin: 11px 0px 0px 4px; " target="_blank"></a>
                                     <a href="#" title="Play" style="color:rgb(59, 89, 152);cursor:pointer;width:36px;background-image:url(/img/game_bar/8bba081e4b32e771144af4a7404209007dff7756.png);background-color: transparent; text-decoration:none;float:left;height:27px;background-position: 0px -27px; margin: 11px 0px 0px 4px;" target="_blank"></a>
                                     <a href="#" title="Add Neighbors" onclick="openNeighborModal(); return false;" id="addNeighborsBtn" style="color:rgb(59, 89, 152);cursor:pointer;width:99px;background-image:url(/img/game_bar/c82d6a5be3328edc136a4f5f2ba7f3ed6228f7b4.png);background-color: transparent; text-decoration:none;float:left;height:27px;margin: 11px 0px 0px 4px; position: relative;"></a>
                                     <!--a href="#" title="Add Neighbors" onclick="document.getElementById('flashapp').popR2AddNeighbor('open')" style="color:rgb(59, 89, 152);cursor:pointer;width:99px;background-image:url(/img/game_bar/c82d6a5be3328edc136a4f5f2ba7f3ed6228f7b4.png);background-color: transparent; text-decoration:none;float:left;height:27px;margin: 11px 0px 0px 4px; "></a-->

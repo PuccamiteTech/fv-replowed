@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AssetsController;
 use App\Http\Controllers\NeighborController;
 use App\Http\Controllers\GameController;
+use App\Http\Controllers\DailyGiftController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -34,6 +35,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/neighbors/accept', [NeighborController::class, 'acceptNeighbor'])->name('neighbors.accept');
     Route::post('/neighbors/reject', [NeighborController::class, 'rejectNeighbor'])->name('neighbors.reject');
     Route::post('/neighbors/send-request', [NeighborController::class, 'sendNeighborRequest'])->name('neighbors.send-request');
+
+    // Daily Gift routes
+    Route::get('/daily-gift/status', [DailyGiftController::class, 'checkStatus'])->name('daily-gift.status');
+    Route::post('/daily-gift/claim', [DailyGiftController::class, 'claim'])->name('daily-gift.claim');
 });
 
 require __DIR__.'/auth.php';
