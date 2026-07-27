@@ -41,6 +41,7 @@ return new class extends Migration
             $table->id();
             $table->string('uid', 20)->unique();
             $table->mediumText('value')->nullable();
+            $table->mediumText('unlocks')->nullable();
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
         });
