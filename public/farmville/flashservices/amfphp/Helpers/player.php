@@ -415,7 +415,7 @@ class Player {
             $stmt->execute();
             $result = $stmt->get_result();
             $row = $result->fetch_assoc();
-            $this->avatarData = ($row["value"] != null) ? unserialize($row["value"]) : null;
+            $this->avatarData = ($row && $row["value"] != null) ? unserialize($row["value"], ["allowed_classes" => false]) : null;
             $this->db->destroy();
         }
 
@@ -432,7 +432,10 @@ class Player {
             $stmt->execute();
             $result = $stmt->get_result();
             $row = $result->fetch_assoc();
-            $this->avatarUnlocks = ($row["unlocks"] != null) ? unserialize($row["unlocks"]) : null;
+            if ($row && $row["unlocks"] != null) {
+                $unlocks = unserialize($row["unlocks"], ["allowed_classes" => false]);
+                $this->avatarUnlocks = is_array($unlocks) ? $unlocks : null;
+            }
             $this->db->destroy();
         }
 

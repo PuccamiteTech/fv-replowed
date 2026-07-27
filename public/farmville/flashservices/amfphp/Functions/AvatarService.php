@@ -55,14 +55,14 @@ class AvatarService{
     public static function isItemUnlocked($playerObj, $itemId){
         $unlocks = $playerObj->getAvatarUnlocks();
 
-        return is_array($unlocks) && in_array($itemId, $unlocks);
+        return is_array($unlocks) && in_array((string) $itemId, $unlocks, true);
     }
 
     
     public static function unlockItem($playerObj, $itemId){
         $unlocks = $playerObj->getAvatarUnlocks() ?? array();
 
-        if (!in_array($itemId, $unlocks)) {
+        if (!in_array((string) $itemId, $unlocks, true)) {
             $unlocks[] = $itemId;
         }
 
@@ -74,7 +74,7 @@ class AvatarService{
     public static function getConfigurations($uid){
         $raw = get_meta($uid, 'avatar_configurations');
         if ($raw) {
-            $configs = @unserialize($raw);
+            $configs = @unserialize($raw, ["allowed_classes" => false]);
             if (is_array($configs)) {
                 return $configs;
             }

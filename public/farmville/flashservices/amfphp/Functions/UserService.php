@@ -3,6 +3,7 @@
 require_once AMFPHP_ROOTPATH . "Helpers/globals.php";
 require_once AMFPHP_ROOTPATH . "Helpers/player.php";
 require_once AMFPHP_ROOTPATH . "Helpers/market_transactions.php";
+require_once AMFPHP_ROOTPATH . "Functions/AvatarService.php";
 
 class UserService{
     function __construct()
@@ -21,7 +22,7 @@ class UserService{
         return $data;
     }
 
-    public static function postInit(){
+    public static function postInit($playerObj, $request){
         $data["data"] = array(
             "postInitTimestampMetric" => time(),
             "friendsFertilized" => array(), // This is probably an array of plots
@@ -46,13 +47,9 @@ class UserService{
             "hudIcons" => false,
             "crossGameGiftingState" => null,
             "avatarState" => array(
-                "unlocked" => array(
-
-                ),
-                "configurations" => array(
-
-                )
-            ), // Need to add unlocked items here
+                "unlocked" => AvatarService::getUnlockedItems($playerObj),
+                "configurations" => AvatarService::getConfigurations($playerObj->getUid())
+            ),
             "breedingState" => null,
             "w2wState" => null,
             "bestSellers" => null,
