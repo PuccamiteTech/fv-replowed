@@ -2,10 +2,62 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\AssetsController;
 use App\Http\Controllers\NeighborController;
 use App\Http\Controllers\GameController;
 use App\Http\Controllers\DailyGiftController;
+
+Route::get('/up', function () {
+    $health = [
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String(),
+        'checks' => [],
+    ];
+
+    $dbStart = microtime(true);
+    try {
+        DB::select('SELECT 1');
+        $health['checks']['database'] = [
+            'status' => 'ok',
+            'ping_ms' => round((microtime(true) - $dbStart) * 1000, 2),
+        ];
+    } catch (\Exception $e) {
+        $health['status'] = 'degraded';
+        $health['checks']['database'] = ['status' => 'error', 'message' => 'Connection failed'];
+    }
+
+    $cacheStart = microtime(true);
+    try {
+        Cache::put('health_check', true, 10);
+        $cacheWorks = Cache::get('health_check') === true;
+        $health['checks']['cache'] = [
+            'status' => $cacheWorks ? 'ok' : 'error',
+            'ping_ms' => round((microtime(true) - $cacheStart) * 1000, 2),
+        ];
+    } catch (\Exception $e) {
+        $health['checks']['cache'] = ['status' => 'error'];
+    }
+
+    try {
+        if (Storage::exists('last_backup.json')) {
+            $backup = json_decode(Storage::get('last_backup.json'), true);
+            $health['checks']['last_backup'] = [
+                'status' => 'ok',
+                'timestamp' => $backup['timestamp'] ?? null,
+                'age_hours' => isset($backup['timestamp']) ? round((time() - $backup['timestamp']) / 3600, 1) : null,
+            ];
+        } else {
+            $health['checks']['last_backup'] = ['status' => 'none'];
+        }
+    } catch (\Exception $e) {
+        $health['checks']['last_backup'] = ['status' => 'error'];
+    }
+
+    return response()->json($health);
+});
 
 Route::get('/', function () {
     return view('welcome');
