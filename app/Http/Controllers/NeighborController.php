@@ -11,22 +11,22 @@ class NeighborController extends Controller
     public function getNeighborsData()
     {
         $user = Auth::user();
-        
+
         // Fetch current meta neighbors
         $currentNeighborsMeta = DB::table('playermeta')
             ->where('uid', $user->uid)
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
-        
-        $neighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta) : [];
-        
+
+        $neighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta, ['allowed_classes' => false]) : [];
+
         $neighbors = [];
-        
+
         if (!empty($neighborIds)) {
             // Fetch neighbor data
             $neighborsQuery = DB::table('users as u')
-                ->join('usermeta as um', 'u.uid', '=', 'um.uid')
-                ->join('useravatars as ua', 'u.uid', '=', 'ua.uid')
+                ->leftJoin('usermeta as um', 'u.uid', '=', 'um.uid')
+                ->leftJoin('useravatars as ua', 'u.uid', '=', 'ua.uid')
                 ->whereIn('u.uid', $neighborIds)
                 ->select(
                     'u.uid',
@@ -35,15 +35,15 @@ class NeighborController extends Controller
                     'ua.value as avatar_value'
                 )
                 ->get();
-            
+
             // Group data by neighbor
             $groupedNeighbors = [];
             foreach ($neighborsQuery as $row) {
                 $avatarData = @unserialize($row->avatar_value, ['allowed_classes' => false]);
                 $gender = is_array($avatarData) && isset($avatarData['gender'])
                     ? $avatarData['gender']
-                    : 'male';
-                
+                    : 'female';
+
                 if (!isset($groupedNeighbors[$row->uid])) {
                     $groupedNeighbors[$row->uid] = [
                         'uid' => $row->uid,
@@ -54,60 +54,61 @@ class NeighborController extends Controller
                     ];
                 }
             }
-            
+
             // Format to FarmVille standard
             foreach ($groupedNeighbors as $neighbor) {
                 $neighbors[] = [
-                    'uid' => $neighbor['uid'],
-                    'first_name' => $neighbor['first_name'],
-                    'last_name' => $neighbor['last_name'],
-                    'name' => $neighbor['name'],
+                    'uid' => (string) $neighbor['uid'],
+                    'first_name' => $neighbor['first_name'] ?? '',
+                    'last_name' => $neighbor['last_name'] ?? '',
+                    'name' => $neighbor['name'] ?? '',
+                    'pic' => '',
                     'pic_square' => '',
-                    'sex' => $neighbor['sex'],
-                    '___is_app_user' => true,
-                    '___allowed_restrictions' => false,
-                    '___pic_big' => ''
+                    'sex' => $neighbor['sex'] ?? 'f',
+                    'is_app_user' => true,
+                    'allowed_restrictions' => false,
+                    'pic_big' => ''
                 ];
             }
         }
-        
+
         return [
             'neighbors' => $neighbors,
             'neighborIds' => array_column($neighbors, 'uid'),
             'neighborsBase64' => base64_encode(json_encode($neighbors))
         ];
     }
-    
+
     public function addNeighbor(Request $request)
     {
         $user = Auth::user();
         $neighborId = $request->input('neighbor_id');
-        
+
         // Check if neighbor exists
         $neighborExists = DB::table('users')->where('uid', $neighborId)->exists();
-        
+
         if (!$neighborExists) {
             return response()->json(['error' => 'Neighbor not found'], 404);
         }
-        
+
         // Fetch current neighbors
         $currentNeighborsMeta = DB::table('playermeta')
             ->where('uid', $user->uid)
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
-        
-        $neighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta) : [];
-        
+
+        $neighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta, ['allowed_classes' => false]) : [];
+
         // Add new neighbor if doesn't exist
         if (!in_array($neighborId, $neighborIds)) {
             $neighborIds[] = $neighborId;
-            
+
             // Check if record already exists
             $exists = DB::table('playermeta')
                 ->where('uid', $user->uid)
                 ->where('meta_key', 'current_neighbors')
                 ->exists();
-            
+
             if ($exists) {
                 DB::table('playermeta')
                     ->where('uid', $user->uid)
@@ -121,30 +122,27 @@ class NeighborController extends Controller
                 ]);
             }
         }
-        
+
         return response()->json(['success' => true, 'message' => 'Neighbor added successfully']);
     }
-    
+
     public function removeNeighbor(Request $request)
     {
         $user = Auth::user();
         $neighborId = $request->input('neighbor_id');
-        
+
         // Fetch current neighbors
         $currentNeighborsMeta = DB::table('playermeta')
             ->where('uid', $user->uid)
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
-        
-        $neighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta) : [];
-        
+
         // Remove neighbor
-        $neighborIds = array_values(array_filter($neighborIds, function($id) use ($neighborId) {
-            return $id != $neighborId;
-        }));
-        
+        $neighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta, ['allowed_classes' => false]) : [];
+        $neighborIds = array_values(array_filter($neighborIds, fn($id) => $id != $neighborId));
+
         if (empty($neighborIds)) {
-        // If empty, delete record
+            // If empty, delete record
             DB::table('playermeta')
                 ->where('uid', $user->uid)
                 ->where('meta_key', 'current_neighbors')
@@ -159,20 +157,20 @@ class NeighborController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Neighbor removed successfully']);
     }
-    
+
     public function getPotentialNeighbors()
     {
         $user = Auth::user();
-        
+
         // Fetch current neighbors
         $currentNeighborsMeta = DB::table('playermeta')
             ->where('uid', $user->uid)
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
-        
-        $currentNeighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta) : [];
-        $currentNeighborIds[] = $user->uid; // Exclude the user itself
-        
+
+        $currentNeighborIds = $currentNeighborsMeta ? unserialize($currentNeighborsMeta, ['allowed_classes' => false]) : [];
+        $currentNeighborIds[] = $user->uid; // Exclude the current user
+
         // Fetch users who are not neighbors
         $potentialNeighbors = DB::table('users as u')
             ->join('usermeta as um', 'u.uid', '=', 'um.uid')
@@ -185,7 +183,7 @@ class NeighborController extends Controller
                 'ua.value as avatar_value'
             )
             ->get();
-        
+
         // Group data
         $groupedUsers = [];
         foreach ($potentialNeighbors as $row) {
@@ -204,24 +202,24 @@ class NeighborController extends Controller
                 ];
             }
         }
-        
+
         return response()->json(['users' => array_values($groupedUsers)]);
     }
 
     public function getPendingRequests()
     {
         $user = Auth::user();
-        
+
         // Fetch pending requests
         $pendingNeighborsMeta = DB::table('playermeta')
             ->where('uid', $user->uid)
             ->where('meta_key', 'pending_neighbors')
             ->value('meta_value');
-        
-        $pendingIds = $pendingNeighborsMeta ? unserialize($pendingNeighborsMeta) : [];
-        
+
+        $pendingIds = $pendingNeighborsMeta ? unserialize($pendingNeighborsMeta, ['allowed_classes' => false]) : [];
+
         $pendingNeighbors = [];
-        
+
         if (!empty($pendingIds)) {
             $neighborsQuery = DB::table('users as u')
                 ->join('usermeta as um', 'u.uid', '=', 'um.uid')
@@ -234,14 +232,14 @@ class NeighborController extends Controller
                     'ua.value as avatar_value'
                 )
                 ->get();
-            
+
             $groupedNeighbors = [];
             foreach ($neighborsQuery as $row) {
                 $avatarData = @unserialize($row->avatar_value, ['allowed_classes' => false]);
                 $gender = is_array($avatarData) && isset($avatarData['gender'])
                     ? $avatarData['gender']
                     : 'male';
-                    
+
                 if (!isset($groupedNeighbors[$row->uid])) {
                     $groupedNeighbors[$row->uid] = [
                         'uid' => $row->uid,
@@ -252,10 +250,10 @@ class NeighborController extends Controller
                     ];
                 }
             }
-            
+
             $pendingNeighbors = array_values($groupedNeighbors);
         }
-        
+
         return response()->json([
             'pending' => $pendingNeighbors,
             'count' => count($pendingNeighbors)
@@ -267,17 +265,17 @@ class NeighborController extends Controller
         $validated = $request->validate([
             'neighbor_id' => 'required|string|max:50'
         ]);
-        
+
         $neighborId = $validated['neighbor_id'];
         $user = Auth::user();
-        
+
         // Remove from pending requests
         $pendingMeta = DB::table('playermeta')
             ->where('uid', $user->uid)
             ->where('meta_key', 'pending_neighbors')
             ->value('meta_value');
-        
-        $pendingIds = $pendingMeta ? unserialize($pendingMeta) : [];
+
+        $pendingIds = $pendingMeta ? unserialize($pendingMeta, ['allowed_classes' => false]) : [];
 
         $pendingIds = array_values(array_filter($pendingIds, function($id) use ($neighborId) {
             return $id != $neighborId;
@@ -296,23 +294,23 @@ class NeighborController extends Controller
                 ->where('meta_key', 'pending_neighbors')
                 ->update(['meta_value' => serialize($pendingIds)]);
         }
-        
+
         // Add to current neighbors
         $currentMeta = DB::table('playermeta')
             ->where('uid', $user->uid)
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
-        
-        $currentIds = $currentMeta ? unserialize($currentMeta) : [];
-        
+
+        $currentIds = $currentMeta ? unserialize($currentMeta, ['allowed_classes' => false]) : [];
+
         if (!in_array($neighborId, $currentIds)) {
             $currentIds[] = $neighborId;
-            
+
             $exists = DB::table('playermeta')
                 ->where('uid', $user->uid)
                 ->where('meta_key', 'current_neighbors')
                 ->exists();
-            
+
             if ($exists) {
                 DB::table('playermeta')
                     ->where('uid', $user->uid)
@@ -326,23 +324,23 @@ class NeighborController extends Controller
                 ]);
             }
         }
-        
+
         // Add current user as neighbor of the other user as well
         $neighborCurrentMeta = DB::table('playermeta')
             ->where('uid', $neighborId)
             ->where('meta_key', 'current_neighbors')
             ->value('meta_value');
-        
-        $neighborCurrentIds = $neighborCurrentMeta ? unserialize($neighborCurrentMeta) : [];
-        
+
+        $neighborCurrentIds = $neighborCurrentMeta ? unserialize($neighborCurrentMeta, ['allowed_classes' => false]) : [];
+
         if (!in_array($user->uid, $neighborCurrentIds)) {
             $neighborCurrentIds[] = $user->uid;
-            
+
             $neighborExists = DB::table('playermeta')
                 ->where('uid', $neighborId)
                 ->where('meta_key', 'current_neighbors')
                 ->exists();
-            
+
             if ($neighborExists) {
                 DB::table('playermeta')
                     ->where('uid', $neighborId)
@@ -356,7 +354,7 @@ class NeighborController extends Controller
                 ]);
             }
         }
-        
+
         return response()->json(['success' => true, 'message' => 'Neighbor request accepted successfully']);
     }
 
@@ -364,19 +362,16 @@ class NeighborController extends Controller
     {
         $user = Auth::user();
         $neighborId = $request->input('neighbor_id');
-        
+
         // Fetch pending requests list
         $pendingMeta = DB::table('playermeta')
             ->where('uid', $user->uid)
             ->where('meta_key', 'pending_neighbors')
             ->value('meta_value');
-        
-        $pendingIds = $pendingMeta ? unserialize($pendingMeta) : [];
 
         // Remove rejected neighbor
-        $pendingIds = array_values(array_filter($pendingIds, function($id) use ($neighborId) {
-            return $id != $neighborId;
-        }));
+        $pendingIds = $pendingMeta ? unserialize($pendingMeta, ['allowed_classes' => false]) : [];
+        $pendingIds = array_values(array_filter($pendingIds, fn($id) => $id != $neighborId));
 
         if (empty($pendingIds)) {
             // If no pending left, delete record
@@ -399,30 +394,36 @@ class NeighborController extends Controller
     {
         $user = Auth::user();
         $neighborId = $request->input('neighbor_id');
-        
+
         // Check if neighbor exists
         $neighborExists = DB::table('users')->where('uid', $neighborId)->exists();
-        
+
         if (!$neighborExists) {
             return response()->json(['error' => 'User not found'], 404);
         }
-        
-        // Add to recipient's pending list
+
+        // Add to recipient's pending list if not neighbors
         $pendingMeta = DB::table('playermeta')
             ->where('uid', $neighborId)
             ->where('meta_key', 'pending_neighbors')
             ->value('meta_value');
-        
-        $pendingIds = $pendingMeta ? unserialize($pendingMeta) : [];
-        
-        if (!in_array($user->uid, $pendingIds)) {
+
+       $currentMeta = DB::table('playermeta')
+            ->where('uid', $neighborId)
+            ->where('meta_key', 'current_neighbors')
+            ->value('meta_value');
+
+        $pendingIds = $pendingMeta ? unserialize($pendingMeta, ['allowed_classes' => false]) : [];
+        $currentIds = $currentMeta ? unserialize($currentMeta, ['allowed_classes' => false]) : [];
+
+        if (!in_array($user->uid, $pendingIds) && !in_array($user->uid, $currentIds)) {
             $pendingIds[] = $user->uid;
-            
+
             $exists = DB::table('playermeta')
                 ->where('uid', $neighborId)
                 ->where('meta_key', 'pending_neighbors')
                 ->exists();
-            
+
             if ($exists) {
                 DB::table('playermeta')
                     ->where('uid', $neighborId)
@@ -436,7 +437,7 @@ class NeighborController extends Controller
                 ]);
             }
         }
-        
+
         return response()->json(['success' => true, 'message' => 'Neighbor request sent successfully']);
     }
 }
