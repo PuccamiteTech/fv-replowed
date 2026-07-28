@@ -1,3 +1,11 @@
+<?php
+$scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+          ($_SERVER['SERVER_PORT'] ?? 80) == 443 ||
+          (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+          ? 'https' : 'http';
+$baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'];
+?>
+
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
@@ -20,7 +28,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900 dark:text-gray-100">
-                    <script type="text/javascript" src="http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/v855036/webassets/js/swfobject_2_2/swfobject.js"></script>
+                    <script type="text/javascript" src="<?= $baseUrl ?>/farmville/v855036/webassets/js/swfobject_2_2/swfobject.js"></script>
 
                     <script>
                         function getExperiments() {
@@ -31,11 +39,11 @@
                         function getUserInfo() {
                             console.log("getUserInfo")
                             var userInfo = {
-                                "uid": "{{ auth()->user()->uid }}",
-                                "name": "{{ auth()->user()->load('userMeta')->userMeta->firstName }}",
+                                "uid": "{{ $user->uid }}",
+                                "name": "{{ $user->userMeta->firstName }}",
                                 "pic_square": "",
-                                "first_name": "{{ auth()->user()->load('userMeta')->userMeta->firstName }}",
-                                "last_name": "{{ auth()->user()->userMeta->lastName }}",
+                                "first_name": "{{ $user->userMeta->firstName }}",
+                                "last_name": "{{ $user->userMeta->lastName }}",
                                 "locale": "en_US",
                                 "is_app_user": true,
                                 "allowed_restrictions": false,
@@ -804,9 +812,9 @@
                                     //callback(result, null)
                                 } else if (method === "users.getLoggedInUser") { // This is not working properly. 
                                     var result = {
-                                        uid: "{{ auth()->user()->uid }}",
-                                        firstName: "{{ auth()->user()->load('userMeta')->userMeta->firstName }}",
-                                        name: "{{ auth()->user()->userMeta->lastName }}",
+                                        uid: "{{ $user->uid }}",
+                                        firstName: "{{ $user->userMeta->firstName }}",
+                                        name: "{{ $user->userMeta->lastName }}",
                                         picture: "",
                                     }
                                     res = callback(result, null)
@@ -828,12 +836,12 @@
                             "token": "2f0daceecd5afb8e59c89777513e844e92",
                             "master_id": "{{ auth()->user()->uid }}",
                             "serverTime": <?= time() ?>,
-                            "app_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/",
-                            "sn_app_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/",
-                            "asset_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/assets/hashed/",
+                            "app_url": "<?= $baseUrl ?>/farmville/",
+                            "sn_app_url": "<?= $baseUrl ?>/farmville/",
+                            "asset_url": "<?= $baseUrl ?>/farmville/assets/hashed/",
                             "isCIP": false,
                             "CHROME_FLASH_FIX_1131_CLONE": true,
-                            // "items_amf_pristine_version": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/assets/hashed/itemsamfpristine/v2/",
+                            // "items_amf_pristine_version": "<?= $baseUrl ?>/farmville/assets/hashed/itemsamfpristine/v2/",
                             "TRANSACTION_LATENCY_POPULATION": 1,
                             "TRANSACTION_LATENCY_MAX_ID": 100,
                             "TIMED_ACTION_MILLISECONDS_OPS": 5,
@@ -842,38 +850,38 @@
                             "flashRevision": "855037.855026",
                             "phpRevision": "855038",
                             "configRevision": "",
-                            "xml_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/",
-                            "master_assethash_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/assethash/v9/",
-                            "masterysigns_amf_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/masterysigns/v1/",
+                            "xml_url": "<?= $baseUrl ?>/farmville/xml/gz/v855038/",
+                            "master_assethash_url": "<?= $baseUrl ?>/farmville/assethash/v9/",
+                            "masterysigns_amf_url": "<?= $baseUrl ?>/farmville/masterysigns/v1/",
                             "ITEMS_AMF_BUILD_TIME_REDUCTION": false,
-                            "swfLocation": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/embeds/Flash/v855037.855026/FarmGame.855037.855026.swf",
+                            "swfLocation": "<?= $baseUrl ?>/farmville/embeds/Flash/v855037.855026/FarmGame.855037.855026.swf",
                             "parts_count": 3,
                             "NO_FUEL_DAY_START_TIME": "1606723200",
                             "NO_FUEL_DAY_END_TIME": "1607328000",
                             "NO_FUEL_DAY_WORLDS": "yuletide",
                             "OPS_JS_GET_FRIENDS_PERMISSION": false,
-                            "game_config_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/gameSettings.xml.gz",
-                            "gameSettingsCMS_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/gameSettingsCMS.xml.gz",
-                            "items_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/items.xml.gz",
+                            "game_config_url": "<?= $baseUrl ?>/farmville/xml/gz/v855038/gameSettings.xml.gz",
+                            "gameSettingsCMS_url": "<?= $baseUrl ?>/farmville/xml/gz/v855038/gameSettingsCMS.xml.gz",
+                            "items_url": "<?= $baseUrl ?>/farmville/xml/gz/v855038/items.xml.gz",
                             "IS_MASTERY_CLEANED": true,
-                            "fgsm_amf_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/fgsm.amf.gz",
+                            "fgsm_amf_url": "<?= $baseUrl ?>/farmville/xml/gz/v855038/fgsm.amf.gz",
                             "FGSM_AMF_ENABLED": false,
                             "OPS_FGSM_QUEST_ITEM_CAT_ENABLED": true,
                             "OPS_SOCIAL_PLUMBING_CLEANUP_TMPRT": 0,
                             "OPS_SOCIAL_PLUMBING_CLEANUP_LOGGING_TMPRT": true,
                             "OPS_TEMPID_ON_PLOTS_TMPRT": true,
                             "R2_NEIGHBOR_AUTOPOP_ENABLE": false,
-                            "dialogs_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/dialogs.xml.gz",
-                            "quest_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/questSettings.xml.gz",
-                            "quest_min_url": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/questSettings_0.xml.gz",
+                            "dialogs_url": "<?= $baseUrl ?>/farmville/xml/gz/v855038/dialogs.xml.gz",
+                            "quest_url": "<?= $baseUrl ?>/farmville/xml/gz/v855038/questSettings.xml.gz",
+                            "quest_min_url": "<?= $baseUrl ?>/farmville/xml/gz/v855038/questSettings_0.xml.gz",
                             "OPS_TRACK_MEMORY_TRENDING": true,
                             "OPS_MEMORY_TRACKING_TIMEINTERVAL_MINUTES": 2,
                             "OPS_FLASH_CRASH_TRACKING_SECONDS": 4000,
                             "FEATURE_IFRAME": 1,
                             "FARM_SLOTS_MIN_SPIN_DELAY_MS": 1000,
                             "MEMORY_CLEANUP_LOCAL_DATA_GC": true,
-                            "fotd": "http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/assets/hashed/assets/fotd/Current/5169f96f29c9856ac53111433cdfff63.jpg",
-                            "fotdChangeTime": 10,
+                            "fotd": "{{ $fotdImages ?: ($baseUrl . '/farmville/assets/hashed/assets/fotd/Current/5169f96f29c9856ac53111433cdfff63.jpg') }}",
+                            "fotdChangeTime": 3,
                             "locale": "en_US",
                             "fblocale": "en_US",
                             "regiftFeedDailyCount": 0,
@@ -900,6 +908,7 @@
                             "showInterstitialAd": 0,
                             "canFertilize": 1,
                             "giftIcon": 1,
+                            "flashGift": "blackrose_singlebloom",
                             "giftIdleMission": 1,
                             "giftMission": 1,
                             "authBypass": 1,
@@ -982,7 +991,7 @@
                             id: "flashapp",
                             name: "flashapp"
                         };
-                        swfobject.embedSWF("http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/embeds/Flash/v855037.855026/FV_Preloader.swf", "flashContent",
+                        swfobject.embedSWF("<?= $baseUrl ?>/farmville/embeds/Flash/v855037.855026/FV_Preloader.swf", "flashContent",
                             "100%", "600", "10.0.0", "playerProductInstall.swf",
                             flashVars, params, attrs, swfCallback);
                     </script>
@@ -1325,11 +1334,11 @@
                                 <div id="flashContent" style="width: 100%; height: 600px;"></div>
                             </div>
                             <!-- PREFETCHED ASSETS -->
-                            <link rel="prefetch" href="http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/items_opt.amf">
-                            <link rel="prefetch" href="http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/gameSettings.xml.gz">
-                            <link rel="prefetch" href="http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/gameSettingsCMS.xml.gz">
-                            <link rel="prefetch" href="http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/FarmConfig.swf">
-                            <link rel="prefetch" href="http://<?= $_SERVER['HTTP_HOST'] ?>/farmville/xml/gz/v855038/en_US.swf">
+                            <link rel="prefetch" href="<?= $baseUrl ?>/farmville/xml/gz/v855038/items_opt.amf">
+                            <link rel="prefetch" href="<?= $baseUrl ?>/farmville/xml/gz/v855038/gameSettings.xml.gz">
+                            <link rel="prefetch" href="<?= $baseUrl ?>/farmville/xml/gz/v855038/gameSettingsCMS.xml.gz">
+                            <link rel="prefetch" href="<?= $baseUrl ?>/farmville/xml/gz/v855038/FarmConfig.swf">
+                            <link rel="prefetch" href="<?= $baseUrl ?>/farmville/xml/gz/v855038/en_US.swf">
                         </div>
                         <div style="margin-top: 50px;">
                             <p style="font-size: 11px;"></p>
