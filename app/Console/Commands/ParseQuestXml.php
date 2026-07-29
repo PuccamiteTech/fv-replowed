@@ -15,24 +15,24 @@ class ParseQuestXml extends Command
         $xmlPath = public_path('farmville/xml/gz/v855038/questSettings_0.xml.gz');
 
         if (!file_exists($xmlPath)) {
-            $this->error("Quest XML file not found: $xmlPath");
+            $this->error("Quest settings not found: $xmlPath");
             return 1;
         }
 
-        $this->info('Reading quest XML file...');
+        $this->info('Reading quest settings...');
         $xmlContent = gzuncompress(file_get_contents($xmlPath));
 
         if ($xmlContent === false) {
-            $this->error('Failed to decompress XML file');
+            $this->error('Failed to decompress settings');
             return 1;
         }
 
-        $this->info('Parsing XML...');
+        $this->info('Parsing settings...');
         libxml_use_internal_errors(true);
         $xml = simplexml_load_string($xmlContent);
 
         if ($xml === false) {
-            $this->error('Failed to parse XML');
+            $this->error('Failed to parse settings');
             foreach (libxml_get_errors() as $error) {
                 $this->error($error->message);
             }
@@ -45,20 +45,27 @@ class ParseQuestXml extends Command
         }
 
         $quests = $xml->quest;
-        $total = count($quests);
-        $this->info("Found $total quests to import");
+        $questCount = count($quests);
 
-        $bar = $this->output->createProgressBar($total);
+        $this->info("Found $questCount quest(s) to import");
+
+        $bar = $this->output->createProgressBar($questCount);
         $bar->start();
 
+        $existing = [];
         $inserted = 0;
+        $failed = 0;
         $skipped = 0;
+
+        if (!$this->option('truncate')) {
+            $existing = DB::table('quests')->pluck('name')->flip();
+        }
 
         foreach ($quests as $quest) {
             $name = (string) $quest['name'];
 
             // Check if quest already exists
-            if (!$this->option('truncate') && DB::table('quests')->where('name', $name)->exists()) {
+            if (isset($existing[$name])) {
                 $skipped++;
                 $bar->advance();
                 continue;
@@ -82,14 +89,20 @@ class ParseQuestXml extends Command
                 'updated_at' => now(),
             ];
 
-            DB::table('quests')->insert($data);
-            $inserted++;
+            if (DB::table('quests')->insert($data)) {
+                $existing[$name] = true;
+                $inserted++;
+            }
+            else {
+                $failed++;
+            }
+
             $bar->advance();
         }
 
         $bar->finish();
         $this->newLine();
-        $this->info("Import complete: $inserted inserted, $skipped skipped");
+        $this->info("Import complete: $inserted inserted, $failed failed, $skipped skipped");
 
         return 0;
     }
