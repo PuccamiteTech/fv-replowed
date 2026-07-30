@@ -97,12 +97,6 @@ class FlashService {
                 // Do nothing
                 //var_dump($e);
             }
-            
-            if ($requ->functionName == "FarmQuestService.questManagerStartReplayableQuestChain"){
-                
-            }
-
-            
         } 
 
         return array(
