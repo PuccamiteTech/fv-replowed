@@ -63,6 +63,10 @@
         }
     }
 
+    function getCurrentWorldType($uid) {
+        return get_meta($uid, "currentWorldType") ?: "farm";
+    }
+
     function compressArray($array){
 
         // Convert the array to JSON (compatible with ActionScript)
@@ -327,4 +331,25 @@
             'messageManager' => array(),
             'creation' => date("Y-m-d h:i:s")
         );
+    }
+
+    function saveWorld($uid, $newData, $type = "farm") {
+        global $db;
+        $oldData = getWorldByType($uid, $type);
+        
+        if (empty($oldData) || !is_array($newData) || !isset($newData["objectsArray"])) {
+            return false;
+        }
+
+        $objects = serialize($newData["objectsArray"]);
+        $sizeX = $newData["sizeX"] ?? $oldData["sizeX"];
+        $sizeY = $newData["sizeY"] ?? $oldData["sizeY"];
+
+        $conn = $db->getDb();
+        $stmt = $conn->prepare("UPDATE userworlds SET sizeX = ?, sizeY = ?, objects = ? WHERE uid = ? AND type = ?");
+        $stmt->bind_param("iisss", $sizeX, $sizeY, $objects, $uid, $type);
+        $stmt->execute();
+        $db->destroy();
+
+        return true;
     }
