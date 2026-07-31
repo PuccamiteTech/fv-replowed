@@ -22,7 +22,6 @@ class DatabaseSeeder extends Seeder
 
         User::create([
             'uid' => $testUid,
-            'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => Hash::make('TestPassword'),
         ]);
@@ -36,5 +35,8 @@ class DatabaseSeeder extends Seeder
         $userAvatar = UserAvatar::create([
             'uid' => $testUid,
         ]);
+
+        // Import quests from XML
+        $this->call(QuestSeeder::class);
     }
 }

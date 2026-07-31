@@ -33,27 +33,32 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'firstName' => 'required',
-            'lastName' => 'required'
+            'firstName' => ['required', 'string', 'max:50'],
+            'lastName' => ['required', 'string', 'max:50']
         ]);
 
-        $newUid = rand(1111111111, 9999999999);
-        $userEx = User::where('uid', '=', $newUid);
-        while ($userEx != null){
-            $newUid = $newUid = rand(1111111111, 9999999999);;
+        $newUid = 0;
+        $userEx = null;
+        $attemptsLeft = 100;
+    
+        do {
+            $newUid = rand(1111111111, 9999999999);
             $userEx = User::where('uid', '=', $newUid)->first();
-        }
+            $attemptsLeft--;
+        } while ($userEx != null && $attemptsLeft > 0);
 
         $user = User::create([
-            'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'uid' => $newUid
         ]);
-
+        
+        if ($user === null) {
+            throw new \Exception('Error: UID generation got stuck! Please try again.');
+        }
+        
         // Create the user meta
         $userMeta = UserMeta::create([
             'uid' => $newUid,
@@ -66,164 +71,6 @@ class RegisteredUserController extends Controller
             'uid' => $newUid,
             // the other field defaults to null
         ]);
-
-        // worlds will be created if they don't exist, so this code is redundant
-        /* 
-        // Unix timestamp in milliseconds
-        $plantTime = (float) ((time() * 1000) - 172800000); // pretend 2 days elapsed
-
-        $userWorld = UserWorld::create([
-            'uid' => $newUid,
-            'type' => 'farm',
-            'objects' => serialize(array(
-                0 => 
-                (object) array(
-                    'plantTime' => $plantTime,
-                    'position' => 
-                    (object) array(
-                    'x' => 27,
-                    'z' => 0,
-                    'y' => 13,
-                    ),
-                    'isBigPlot' => false,
-                    'direction' => 0,
-                    'isJumbo' => true,
-                    'deleted' => false,
-                    'tempId' => -1,
-                    'className' => 'Plot',
-                    'state' => 'fallow',
-                    'instanceDataStoreKey' => NULL,
-                    'components' => 
-                    (object) array(
-                    ),
-                    'isProduceItem' => false,
-                    'id' => 1,
-                    'itemName' => NULL,
-                ),
-                1 => 
-                (object) array(
-                    'plantTime' => $plantTime,
-                    'position' => 
-                    (object) array(
-                    'x' => 27,
-                    'z' => 0,
-                    'y' => 9,
-                    ),
-                    'isBigPlot' => false,
-                    'direction' => 0,
-                    'isJumbo' => true,
-                    'deleted' => false,
-                    'tempId' => -1,
-                    'className' => 'Plot',
-                    'state' => 'fallow',
-                    'instanceDataStoreKey' => NULL,
-                    'components' => 
-                    (object) array(
-                    ),
-                    'isProduceItem' => false,
-                    'id' => 2,
-                    'itemName' => NULL,
-                ),
-                2 => 
-                (object) array(
-                    'plantTime' => $plantTime, // finish growing now
-                    'position' => 
-                    (object) array(
-                    'x' => 19,
-                    'z' => 0,
-                    'y' => 9,
-                    ),
-                    'isBigPlot' => false,
-                    'direction' => 0,
-                    'isJumbo' => false,
-                    'deleted' => false,
-                    'tempId' => -1,
-                    'className' => 'Plot',
-                    'state' => 'planted',
-                    'instanceDataStoreKey' => NULL,
-                    'components' => 
-                    (object) array(
-                    ),
-                    'isProduceItem' => false,
-                    'id' => 3,
-                    'itemName' => 'eggplant',
-                ),
-                3 => 
-                (object) array(
-                    'plantTime' => $plantTime,
-                    'position' => 
-                    (object) array(
-                    'x' => 19,
-                    'z' => 0,
-                    'y' => 13,
-                    ),
-                    'isBigPlot' => false,
-                    'direction' => 0,
-                    'isJumbo' => false,
-                    'deleted' => false,
-                    'tempId' => -1,
-                    'className' => 'Plot',
-                    'state' => 'planted',
-                    'instanceDataStoreKey' => NULL,
-                    'components' => 
-                    (object) array(
-                    ),
-                    'isProduceItem' => false,
-                    'id' => 4,
-                    'itemName' => 'eggplant',
-                ),
-                4 => 
-                (object) array(
-                    'plantTime' => NAN,
-                    'position' => 
-                    (object) array(
-                    'x' => 23,
-                    'z' => 0,
-                    'y' => 9,
-                    ),
-                    'isBigPlot' => false,
-                    'direction' => 0,
-                    'isJumbo' => false,
-                    'deleted' => false,
-                    'tempId' => -1,
-                    'className' => 'Plot',
-                    'state' => 'plowed',
-                    'instanceDataStoreKey' => NULL,
-                    'components' => 
-                    (object) array(
-                    ),
-                    'isProduceItem' => false,
-                    'id' => 5,
-                    'itemName' => NULL,
-                ),
-                5 => 
-                (object) array(
-                    'plantTime' => NAN,
-                    'position' => 
-                    (object) array(
-                    'x' => 23,
-                    'z' => 0,
-                    'y' => 13,
-                    ),
-                    'isBigPlot' => false,
-                    'direction' => 0,
-                    'isJumbo' => false,
-                    'deleted' => false,
-                    'tempId' => -1,
-                    'className' => 'Plot',
-                    'state' => 'plowed',
-                    'instanceDataStoreKey' => NULL,
-                    'components' => 
-                    (object) array(
-                    ),
-                    'isProduceItem' => false,
-                    'id' => 6,
-                    'itemName' => NULL,
-                ),
-            )),
-            'messageManager' => ""
-        ]);
-        */
 
         event(new Registered($user));
 

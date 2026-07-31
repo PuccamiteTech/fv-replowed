@@ -3,10 +3,16 @@
         @csrf
 
         <!-- Name -->
-        <div>
-            <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
-            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+        <div class="mt-4">
+            <x-input-label for="firstName" :value="__('First Name')" />
+            <x-text-input id="firstName" class="block mt-1 w-full" type="text" name="firstName" :value="old('firstName')" required autocomplete="username" />
+            <x-input-error :messages="$errors->get('firstName')" class="mt-2" />
+        </div>
+
+        <div class="mt-4">
+            <x-input-label for="lastName" :value="__('Last Name')" />
+            <x-text-input id="lastName" class="block mt-1 w-full" type="text" name="lastName" :value="old('lastName')" required autocomplete="username" />
+            <x-input-error :messages="$errors->get('lastName')" class="mt-2" />
         </div>
 
         <!-- Email Address -->
@@ -37,18 +43,6 @@
                             name="password_confirmation" required autocomplete="new-password" />
 
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-        </div>
-
-        <div class="mt-4">
-            <x-input-label for="firstName" :value="__('First Name')" />
-            <x-text-input id="firstName" class="block mt-1 w-full" type="text" name="firstName" :value="old('firstName')" required autocomplete="username" />
-            <x-input-error :messages="$errors->get('firstName')" class="mt-2" />
-        </div>
-
-        <div class="mt-4">
-            <x-input-label for="lastName" :value="__('Last Name')" />
-            <x-text-input id="lastName" class="block mt-1 w-full" type="text" name="lastName" :value="old('lastName')" required autocomplete="username" />
-            <x-input-error :messages="$errors->get('lastName')" class="mt-2" />
         </div>
 
         <div class="flex items-center justify-end mt-4">

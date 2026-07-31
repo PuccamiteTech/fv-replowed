@@ -63,6 +63,10 @@
         }
     }
 
+    function getCurrentWorldType($uid) {
+        return get_meta($uid, "currentWorldType") ?: "farm";
+    }
+
     function compressArray($array){
 
         // Convert the array to JSON (compatible with ActionScript)
@@ -127,10 +131,15 @@
                 // no point in validating further
                 // if the row's contents are invalid, loading SHOULD fail
                 $row = $result->fetch_assoc();
+
+                // populate objects if missing, retaining other data
+                if (empty($worldData["objectsArray"] = unserialize($row["objects"]))){
+                    $worldData["objectsArray"] = createWorldObjects();
+                }
+
                 $worldData["type"] = $row["type"];
                 $worldData["sizeX"] = $row["sizeX"];
                 $worldData["sizeY"] = $row["sizeY"];
-                $worldData["objectsArray"] = unserialize($row["objects"]);
                 $worldData["creation"] = $row["created_at"];
                 $worldData["messageManager"] = array();
             }else{
@@ -143,16 +152,12 @@
         return $worldData;
     }
 
-    function createWorldByType($uid, $type = "farm" ){
-        global $db;
-
-        $size = 50; // matches the schema default
-        $messageManager = "";
-
+    function createWorldObjects()
+    {
         // Unix timestamp in milliseconds
         $plantTime = (float) ((time() * 1000) - 172800000); // pretend 2 days elapsed
-        
-        $newWorld = serialize(array(
+
+        return array(
             0 => 
             (object) array(
                 'plantTime' => $plantTime,
@@ -297,7 +302,16 @@
                 'id' => 6,
                 'itemName' => NULL,
             ),
-        ));
+        );
+    }
+
+    function createWorldByType($uid, $type = "farm"){
+        global $db;
+
+        $size = 50; // matches the schema default
+        $messageManager = "";
+        
+        $newWorld = serialize(createWorldObjects());
         
         // only checking if the serialization was successful JUST IN CASE
         if (is_numeric($uid) && is_string($type) && $type !== "" && is_string($newWorld)){
@@ -317,4 +331,25 @@
             'messageManager' => array(),
             'creation' => date("Y-m-d h:i:s")
         );
+    }
+
+    function saveWorld($uid, $newData, $type = "farm") {
+        global $db;
+        $oldData = getWorldByType($uid, $type);
+        
+        if (empty($oldData) || !is_array($newData) || !isset($newData["objectsArray"])) {
+            return false;
+        }
+
+        $objects = serialize($newData["objectsArray"]);
+        $sizeX = $newData["sizeX"] ?? $oldData["sizeX"];
+        $sizeY = $newData["sizeY"] ?? $oldData["sizeY"];
+
+        $conn = $db->getDb();
+        $stmt = $conn->prepare("UPDATE userworlds SET sizeX = ?, sizeY = ?, objects = ? WHERE uid = ? AND type = ?");
+        $stmt->bind_param("iisss", $sizeX, $sizeY, $objects, $uid, $type);
+        $stmt->execute();
+        $db->destroy();
+
+        return true;
     }

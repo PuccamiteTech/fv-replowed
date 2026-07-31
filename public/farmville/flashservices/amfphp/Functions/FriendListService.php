@@ -9,7 +9,7 @@ class FriendListService{
         foreach ($friendData as $friend){
             $fvFriends[] =  (object) [
                 "uid" => $friend['uid'],
-                "name" => $friend['name'],
+                "name" => $friend['firstname'] . ' ' . $friend['lastname'],
                 "first_name" => $friend['firstname'],
                 "last_name" => $friend['lastname'],
                 "is_app_user" => true,

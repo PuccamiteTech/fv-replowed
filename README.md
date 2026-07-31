@@ -28,6 +28,12 @@ A revival project for the world's finest Flash farming game
 * Open a Laragon terminal. Execute cd fv, composer install, php artisan key:generate, and php artisan serve.
 * Navigate to the resulting URL in a Flash-enabled browser, register, and play.
 
+## Artisan Commands
+* `quest:parse` - Parse quest XML and populate quests table
+* `db:backup` - Backup database to Backblaze B2
+* `discord:status` - Update Discord server status message
+* `world:cleanup-deleted` - Hard delete soft-deleted world objects
+
 ## Notes
 * Error dialogs popping up for missing assets is expected.
 * Alternative data can be located using the assethash file.
@@ -36,12 +42,14 @@ A revival project for the world's finest Flash farming game
 * Be careful, as only non-commented lines within php.ini change settings.
 * You ahould run Laragon as an administrator at a path without spaces.
 * Laragon may prompt you to configure virtual hosts as another way to access the game.
+* To enable logging, you can create a file named amf_debug inside the farmville directory.
 
 ## Credits
 * kehayeah: PHP work and reverse engineering
 * puccamite.tech: Dehasher development
 * rabbetsbigday: Additional technical advising
 * jpfleischer: Dockerization
+* slipstream: Numerous improvements
 
 ## Docker
 
