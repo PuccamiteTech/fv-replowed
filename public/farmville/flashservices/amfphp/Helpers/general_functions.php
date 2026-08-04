@@ -110,6 +110,24 @@
         return false;
     }
 
+    function getItemByCode($itemCode) {
+        global $db;
+
+        if (!is_string($itemCode) || $itemCode === "") {
+            return false;
+        }
+
+        $conn = $db->getDb();
+        $stmt = $conn->prepare("SELECT * FROM items WHERE code = ?");
+        $stmt->bind_param("s", $itemCode);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $item = $result->fetch_assoc();
+        $db->destroy();
+
+        return unserialize($item["data"]);
+    }
+
     /*
     function getWorldByUid($uid){
         return getWorldByType($uid);
