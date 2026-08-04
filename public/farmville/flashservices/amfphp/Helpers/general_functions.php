@@ -353,3 +353,55 @@
 
         return true;
     }
+
+    function getGiftBox($uid) {
+        $raw = get_meta($uid, 'giftbox');
+        if ($raw) {
+            $data = @unserialize($raw);
+            if (is_array($data)) {
+                return $data;
+            }
+        }
+        return [];
+    }
+    
+    function saveGiftBox($uid, $giftbox) {
+        set_meta($uid, 'giftbox', serialize($giftbox));
+    }
+
+    function addGiftByCode($uid, $itemCode, $quantity = 1, $senderId = null, $extraData = null) {
+        $giftbox = getGiftBox($uid);
+        
+        $extraDataObj = null;
+        if ($extraData !== null) {
+            $extraDataObj = is_array($extraData) ? (object) $extraData : $extraData;
+        }
+        
+        if (isset($giftbox[$itemCode])) {
+            $giftbox[$itemCode][0] += $quantity;
+            if ($senderId) {
+                $giftbox[$itemCode][1][] = $senderId;
+            }
+            if ($extraDataObj !== null) {
+                if (!isset($giftbox[$itemCode][2]) || !is_array($giftbox[$itemCode][2])) {
+                    $giftbox[$itemCode][2] = [];
+                }
+                for ($i = 0; $i < $quantity; $i++) {
+                    $giftbox[$itemCode][2][] = $extraDataObj;
+                }
+            }
+        } else {
+            $extraDataArray = [];
+            if ($extraDataObj !== null) {
+                for ($i = 0; $i < $quantity; $i++) {
+                    $extraDataArray[] = $extraDataObj;
+                }
+            }
+            $giftbox[$itemCode] = [
+                $quantity,
+                $senderId ? [$senderId] : [],
+                $extraDataArray
+            ];
+        }
+        saveGiftBox($uid, $giftbox);
+    }
