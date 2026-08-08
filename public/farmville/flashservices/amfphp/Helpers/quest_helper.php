@@ -1,6 +1,6 @@
 <?php
 
-require_once AMFPHP_ROOTPATH . "Helpers/globals.php";
+require_once AMFPHP_ROOTPATH . "Helpers/database.php";
 require_once AMFPHP_ROOTPATH . "Helpers/general_functions.php";
 require_once AMFPHP_ROOTPATH . "Helpers/user_resources.php";
 
@@ -9,7 +9,6 @@ define('META_QUEST_COMPLETED', 'quest_completed');
 define('META_QUEST_COMPLETED_REPLAYABLE', 'quest_completed_replayable');
 
 function getQuestByName($questName) {
-    global $db;
     static $questCache = [];
 
     if (!is_string($questName)) {
@@ -19,20 +18,11 @@ function getQuestByName($questName) {
         return $questCache[$questName];
     }
     
-    $conn = $db->getDb();
-    $stmt = $conn->prepare("SELECT * FROM quests WHERE name = ? LIMIT 1");
-    $stmt->bind_param("s", $questName);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $row = Database::query("SELECT * FROM quests WHERE name = ? LIMIT 1", [$questName], "s", Database::FETCH_ONE);
 
-    if (!$result || $result->num_rows <= 0) {
-        $db->destroy();
-        $questCache[$questName] = null;
-        return null;
+    if ($row === null) {
+        return ($questCache[$questName] = null);
     }
-
-    $row = $result->fetch_assoc();
-    $db->destroy();
 
     $row['prereqs'] = $row['prereqs'] ? json_decode($row['prereqs'], true) : [];
     $row['children'] = $row['children'] ? json_decode($row['children'], true) : [];
@@ -46,19 +36,12 @@ function getQuestByName($questName) {
 }
 
 function getQuestsByCategory($category) {
-    global $db;
-
     if (!is_string($category)){
         return [];
     }
 
-    $conn = $db->getDb();
-    $stmt = $conn->prepare("SELECT name FROM quests WHERE category = ? ORDER BY priority");
-    $stmt->bind_param("s", $category);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    
-    $questNames = ($result) ? array_column($result->fetch_all(MYSQLI_ASSOC), 'name') : [];
+    $questNames = Database::query("SELECT name FROM quests WHERE category = ? ORDER BY priority", [$category], "s", Database::FETCH_ALL);
+    $questNames = ($questNames !== null) ? array_column($questNames, 'name') : [];
     $quests = [];
 
     foreach ($questNames as $name) {
@@ -66,8 +49,6 @@ function getQuestsByCategory($category) {
             $quests[] = $row;
         }
     }
-
-    $db->destroy();
 
     return $quests;
 }

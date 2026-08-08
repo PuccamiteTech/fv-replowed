@@ -1,5 +1,5 @@
 <?php
-    require_once AMFPHP_ROOTPATH . "Helpers/globals.php";
+    require_once AMFPHP_ROOTPATH . "Helpers/database.php";
     /**
      * Get User Metadata
      * 
@@ -9,26 +9,13 @@
      *                False for invalid $uid of non found $meta_key
      */
     function get_meta($uid, $meta_key){
-        global $db;
-
         $meta = [];
 
         if (is_numeric($uid) && is_string($meta_key) && $meta_key !== ""){
-            $conn = $db->getDb();
-            $stmt = $conn->prepare("SELECT meta_value FROM playermeta WHERE meta_key = ? AND uid = ?");
-            $stmt->bind_param("ss", $meta_key, $uid);
-            $stmt->execute();
-            // var_dump($conn->query($query));
-            $result = $stmt->get_result();
-            
-            if ($result->num_rows > 0){
-                $meta = $result->fetch_assoc();
-            }
-
-            $db->destroy();
+            $meta = Database::query("SELECT meta_value FROM playermeta WHERE meta_key = ? AND uid = ?", [$meta_key, $uid], "ss", Database::FETCH_ONE);
         }
 
-        return ($meta != null) ? $meta["meta_value"] : false;
+        return ($meta !== null) ? $meta["meta_value"] : false;
     }
 
 
@@ -43,23 +30,14 @@
      *                False for incalid $uid of non found $meta_key
      */
     function set_meta($uid, $meta_key, $meta_value){
-        global $db;
-
         $meta_rec = get_meta($uid, $meta_key); // params validated inside
-        $conn = $db->getDb();
         
         if (is_string($meta_value)){
             if ($meta_rec){
-                $stmt = $conn->prepare("UPDATE playermeta SET meta_value = ? WHERE uid = ? AND meta_key = ?");
-                $stmt->bind_param("sss", $meta_value, $uid, $meta_key);
-                $stmt->execute();
+                Database::query("UPDATE playermeta SET meta_value = ? WHERE uid = ? AND meta_key = ?", [$meta_value, $uid, $meta_key], "sss");
             }else{
-                $stmt = $conn->prepare("INSERT INTO playermeta (uid, meta_key, meta_value) VALUES (?, ?, ?)");
-                $stmt->bind_param("sss", $uid, $meta_key, $meta_value);
-                $stmt->execute();
+                Database::query("INSERT INTO playermeta (uid, meta_key, meta_value) VALUES (?, ?, ?)", [$uid, $meta_key, $meta_value], "sss");
             }
-
-            $db->destroy();
         }
     }
 
@@ -83,18 +61,9 @@
 
 
     function getItemByName($itemName, $method = "json"){
-        global $db;
-
         if (is_string($itemName) && $itemName !== ""){
             if ($method === "db"){
-                $conn = $db->getDb();
-                $stmt = $conn->prepare("SELECT * FROM items WHERE name = ?");
-                $stmt->bind_param("s", $itemName);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                $item = $result->fetch_assoc();
-                $db->destroy();
-
+                $item = Database::query("SELECT * FROM items WHERE name = ?", [$itemName], "s", Database::FETCH_ONE);
                 return unserialize($item["data"]);
             }
 
@@ -111,20 +80,11 @@
     }
 
     function getItemByCode($itemCode) {
-        global $db;
-
         if (!is_string($itemCode) || $itemCode === "") {
             return false;
         }
 
-        $conn = $db->getDb();
-        $stmt = $conn->prepare("SELECT * FROM items WHERE code = ?");
-        $stmt->bind_param("s", $itemCode);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $item = $result->fetch_assoc();
-        $db->destroy();
-
+        $item = Database::query("SELECT * FROM items WHERE code = ?", [$itemCode], "s", Database::FETCH_ONE);
         return unserialize($item["data"]);
     }
 
@@ -134,21 +94,14 @@
     }
     */
     function getWorldByType($uid, $type = "farm"){
-        global $db;
-
         $worldData = [];
 
         if (is_numeric($uid) && is_string($type) && $type !== ""){
-            $conn = $db->getDb();
-            $stmt = $conn->prepare("SELECT * FROM userworlds WHERE type = ? AND uid = ?");
-            $stmt->bind_param("ss", $type, $uid);
-            $stmt->execute();
-            $result = $stmt->get_result();
+            $row = Database::query("SELECT * FROM userworlds WHERE type = ? AND uid = ?", [$type, $uid], "ss", Database::FETCH_ONE);
 
-            if ($result->num_rows > 0){
+            if ($row !== null){
                 // no point in validating further
                 // if the row's contents are invalid, loading SHOULD fail
-                $row = $result->fetch_assoc();
 
                 // populate objects if missing, retaining other data
                 if (empty($worldData["objectsArray"] = unserialize($row["objects"]))){
@@ -163,8 +116,6 @@
             }else{
                 $worldData = createWorldByType($uid, $type);
             }
-
-            $db->destroy();
         }
         
         return $worldData;
@@ -324,8 +275,6 @@
     }
 
     function createWorldByType($uid, $type = "farm"){
-        global $db;
-
         $size = 50; // matches the schema default
         $messageManager = "";
         
@@ -333,11 +282,8 @@
         
         // only checking if the serialization was successful JUST IN CASE
         if (is_numeric($uid) && is_string($type) && $type !== "" && is_string($newWorld)){
-            $conn = $db->getDb();
-            $stmt = $conn->prepare("INSERT INTO userworlds (uid, type, sizeX, sizeY, objects, messageManager) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssiiss", $uid, $type, $size, $size, $newWorld, $messageManager);
-            $stmt->execute();
-            $db->destroy();
+            Database::query("INSERT INTO userworlds (uid, type, sizeX, sizeY, objects, messageManager) VALUES (?, ?, ?, ?, ?, ?)",
+                [$uid, $type, $size, $size, $newWorld, $messageManager], "ssiiss");
         }
 
         return array(
@@ -352,7 +298,6 @@
     }
 
     function saveWorld($uid, $newData, $type = "farm") {
-        global $db;
         $oldData = getWorldByType($uid, $type);
         
         if (empty($oldData) || !is_array($newData) || !isset($newData["objectsArray"])) {
@@ -363,13 +308,8 @@
         $sizeX = $newData["sizeX"] ?? $oldData["sizeX"];
         $sizeY = $newData["sizeY"] ?? $oldData["sizeY"];
 
-        $conn = $db->getDb();
-        $stmt = $conn->prepare("UPDATE userworlds SET sizeX = ?, sizeY = ?, objects = ? WHERE uid = ? AND type = ?");
-        $stmt->bind_param("iisss", $sizeX, $sizeY, $objects, $uid, $type);
-        $stmt->execute();
-        $db->destroy();
-
-        return true;
+        $result = Database::query("UPDATE userworlds SET sizeX = ?, sizeY = ?, objects = ? WHERE uid = ? AND type = ?", [$sizeX, $sizeY, $objects, $uid, $type], "iisss");
+        return ($result !== null);
     }
 
     function getGiftBox($uid) {

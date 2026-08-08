@@ -1,34 +1,90 @@
 <?php
 
-require_once ('config.php');
+require_once 'config.php';
 
 class Database {
+    public const FETCH_NONE = 0;
+    public const FETCH_ONE = 1;
+    public const FETCH_ALL = 2;
 
-    private $host = DB_SERVER;
-    private $username = DB_USERNAME;
-    private $password = DB_PASSWORD;
-    private $dbname = DB_NAME;
-    private $db = null;
+    private static string $host = DB_SERVER;
+    private static string $username = DB_USERNAME;
+    private static string $password = DB_PASSWORD;
+    private static string $dbname = DB_NAME;
+    private static ?mysqli $instance = null;
 
-    // connect to database
-    public function __construct() {
-        
-    }
+    private function __construct() {}
 
-    // get the database connection
-    public function getDb() {
-        $this->db = new mysqli($this->host, $this->username, $this->password, $this->dbname);
-
-        // check connection
-        if($this->db->connect_error){
-            die("ERROR: Could not connect to database. " . $this->db->connect_error);
+    public static function instance(): mysqli {
+        if (self::$instance !== null) {
+            return self::$instance;
         }
 
-        return $this->db;
+        self::$instance = new mysqli(self::$host, self::$username, self::$password, self::$dbname);
+
+        if (self::$instance->connect_error){
+            throw new RuntimeException("ERROR: Database connection failed");
+        }
+
+        return self::$instance;
     }
 
-    public function destroy(){
-        $this->db->close();
+    public static function query(string $query, array $params, string $types, int $mode = self::FETCH_NONE): ?array {
+        if (self::$instance === null) {
+            self::instance();
+        }
+
+        if (!is_string($query) || !is_array($params) || !is_string($types) || !is_int($mode)) {
+            return null;
+        }
+        elseif ($mode < self::FETCH_NONE || $mode > self::FETCH_ALL) {
+            return null;
+        }
+        elseif (count($params) !== strlen($types)) {
+            return null;
+        }
+        elseif (!($stmt = self::$instance->prepare($query))) {
+            return null;
+        }
+        elseif (!($stmt->bind_param($types, ...$params))) {
+            return null;
+        }
+        elseif (!($stmt->execute())) {
+            return null;
+        }
+        
+        $data = [];
+        $result = null;
+
+        if ($mode !== self::FETCH_NONE && !($result = $stmt->get_result())) {
+            return null;
+        }
+        elseif ($mode === self::FETCH_ONE) {
+            $data = $result->fetch_assoc() ?: null;
+        }
+        elseif ($mode === self::FETCH_ALL) {
+            $buffer = null;
+
+            while ($buffer = $result->fetch_assoc()) {
+                $data[] = $buffer;
+            }
+
+            if ($buffer === false) {
+                return null;
+            }
+        }
+        else {
+            $data["affected_rows"] = ($stmt->affected_rows ?: 0);
+        }
+
+        return $data;
+    }
+
+    public static function destroy(): void {
+        if (self::$instance !== null) {
+            self::$instance->close();
+        }
+
+        self::$instance = null;
     }
 }
-?>

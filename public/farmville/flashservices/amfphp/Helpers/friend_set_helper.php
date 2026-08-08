@@ -1,59 +1,29 @@
 <?php
-require_once AMFPHP_ROOTPATH . "Helpers/globals.php";
+require_once AMFPHP_ROOTPATH . "Helpers/database.php";
 require_once AMFPHP_ROOTPATH . "Helpers/user_resources.php";
 require_once AMFPHP_ROOTPATH . "Helpers/json_helper.php";
 
 // TODO: delegate to updateFriendSet
 
 function getFriendSet($uid, $code) {
-    global $db;
-
     if (!is_numeric($uid) || !is_string($code)) {
         return null;
     }
 
-    $conn = $db->getDb();
-    $stmt = $conn->prepare("SELECT * FROM friend_sets WHERE uid = ? AND code = ? ORDER BY fs_index DESC LIMIT 1");
-    $stmt->bind_param("ss", $uid, $code);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if (!$result || $result->num_rows <= 0) {
-        $db->destroy();
-        return null;
-    }
-
-    $row = $result->fetch_assoc();
-    $db->destroy();
+    $row = Database::query("SELECT * FROM friend_sets WHERE uid = ? AND code = ? ORDER BY fs_index DESC LIMIT 1", [$uid, $code], "ss", Database::FETCH_ONE);
     return $row;
 }
 
 function getFriendSetByIndex($uid, $code, $fsIndex) {
-    global $db;
-
     if (!is_numeric($uid) || !is_string($code) || !is_int($fsIndex)) {
         return null;
     }
 
-    $conn = $db->getDb();
-    $stmt = $conn->prepare("SELECT * FROM friend_sets WHERE uid = ? AND code = ? AND fs_index = ? LIMIT 1");
-    $stmt->bind_param("ssi", $uid, $code, $fsIndex);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    if (!$result || $result->num_rows <= 0) {
-        $db->destroy();
-        return null;
-    }
-
-    $row = $result->fetch_assoc();
-    $db->destroy();
+    $row = Database::query("SELECT * FROM friend_sets WHERE uid = ? AND code = ? AND fs_index = ? LIMIT 1", [$uid, $code, $fsIndex], "ssi", Database::FETCH_ONE);
     return $row;
 }
 
 function createFriendSet($uid, $code, $worldCode, $totalRequired = 5) {
-    global $db;
-
     if (!is_numeric($uid) || !is_string($code) || !is_string($worldCode) || !is_int($totalRequired)) {
         return null;
     }
@@ -78,18 +48,13 @@ function createFriendSet($uid, $code, $worldCode, $totalRequired = 5) {
     $pendingJson = JsonHelper::safeEncode([]);
     $startTime = time();
 
-    $conn = $db->getDb();
-    $stmt = $conn->prepare("INSERT INTO friend_sets (uid, code, fs_index, friends, pending, bought_count, progress_state, start_time, world_code, reward_link) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssissiiiss", $uid, $code, $nextIndex, $friendsJson, $pendingJson, 0, 0, $startTime, $worldCode, '');
-    $stmt->execute();
-    $db->destroy();
+    Database::query("INSERT INTO friend_sets (uid, code, fs_index, friends, pending, bought_count, progress_state, start_time, world_code, reward_link) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [$uid, $code, $nextIndex, $friendsJson, $pendingJson, 0, 0, $startTime, $worldCode, ''], "ssissiiiss");
 
     return getFriendSetByIndex($uid, $code, $nextIndex);
 }
 
 function updateFriendSet($data) {
-    global $db;
-
     if (!is_array($data) || !isset($data['uid']) || !isset($data['code']) || !isset($data['fs_index'])) {
         return false;
     }
@@ -106,36 +71,24 @@ function updateFriendSet($data) {
     $progressState = $data['progress_state'] ?? $fallback['progress_state'];
     $id = $fallback['id'];
 
-    $conn = $db->getDb();
-    $stmt = $conn->prepare("UPDATE friend_sets SET friends = ?, pending = ?, bought_count = ?, progress_state = ? WHERE id = ?");
-    $stmt->bind_param("ssiii", $friends, $pending, $boughtCount, $progressState, $id);
-    $stmt->execute();
-    $affected = $stmt->affected_rows ?? 0;
-    $db->destroy();
+    $result = Database::query("UPDATE friend_sets SET friends = ?, pending = ?, bought_count = ?, progress_state = ? WHERE id = ?",
+        [$friends, $pending, $boughtCount, $progressState, $id], "ssiii");
 
-    return ($affected > 0);
+    return (($result["affected_rows"] ?? 0) > 0);
 }
 
 function updateProgressState($uid, $code, $fsIndex, $newState) {
-    global $db;
-
     if (!is_numeric($uid) || !is_string($code) || !is_int($fsIndex) || !is_int($newState)) {
         return false;
     }
 
-    $conn = $db->getDb();
-    $stmt = $conn->prepare("UPDATE friend_sets SET progress_state = ? WHERE uid = ? AND code = ? AND fs_index = ?");
-    $stmt->bind_param("issi", $newState, $uid, $code, $fsIndex);
-    $stmt->execute();
-    $affected = $stmt->affected_rows ?? 0;
-    $db->destroy();
+    $result = Database::query("UPDATE friend_sets SET progress_state = ? WHERE uid = ? AND code = ? AND fs_index = ?",
+        [$newState, $uid, $code, $fsIndex], "issi");
 
-    return ($affected > 0);
+    return (($result["affected_rows"] ?? 0) > 0);
 }
 
 function completeFriendSetWithCash($uid, $code, $fsIndex, $totalRequired = 5, $costPerFriend = 4) {
-    global $db;
-
     $fs = getFriendSetByIndex($uid, $code, $fsIndex);
     if (!$fs) {
         return ["status" => 2, "cost" => 0, "data" => null, "gifts" => []];
@@ -151,7 +104,9 @@ function completeFriendSetWithCash($uid, $code, $fsIndex, $totalRequired = 5, $c
 
     $completedCount = 0;
     foreach ($friends as $val) {
-        if ((int) $val > 0) $completedCount++;
+        if ((int) $val > 0) {
+            $completedCount++;
+        }
     }
     $completedCount += $boughtCount;
 
@@ -186,12 +141,8 @@ function completeFriendSetWithCash($uid, $code, $fsIndex, $totalRequired = 5, $c
 
     $newBought = $boughtCount + $missing;
 
-    $conn = $db->getDb();
-    $stmt = $conn->prepare("UPDATE friend_sets SET bought_count = ?, progress_state = 2 WHERE uid = ? AND code = ? AND fs_index = ?");
-    $stmt->bind_param("issi", $newBought, $uid, $code, $fsIndex);
-    $stmt->execute();
-    //$affected = $stmt->affected_rows ?? 0;
-    $db->destroy();
+    Database::query("UPDATE friend_sets SET bought_count = ?, progress_state = 2 WHERE uid = ? AND code = ? AND fs_index = ?",
+        [$newBought, $uid, $code, $fsIndex], "issi");
 
     $updatedFs = getFriendSetByIndex($uid, $code, $fsIndex);
     addGiftByCode($uid, $worldCode);
@@ -224,25 +175,16 @@ function buildFriendSetResponse($row) {
 }
 
 function recordFriendHelp($hostUid, $helperUid, $code = "FS06", $totalRequired = 5) {
-    global $db;
-
     if (!is_numeric($hostUid) || !is_numeric($helperUid) || !is_string($code) || !is_int($totalRequired) || $hostUid == $helperUid) {
         return false;
     }
 
-    $conn = $db->getDb();
-    $stmt = $conn->prepare("SELECT * FROM friend_sets WHERE uid = ? AND code = ? AND progress_state < 2 ORDER BY fs_index DESC LIMIT 1");
-    $stmt->bind_param("ss", $hostUid, $code);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $fs = Database::query("SELECT * FROM friend_sets WHERE uid = ? AND code = ? AND progress_state < 2 ORDER BY fs_index DESC LIMIT 1",
+        [$hostUid, $code], "ss", Database::FETCH_ONE);
 
-    if (!$result || $result->num_rows <= 0) {
-        $db->destroy();
+    if ($fs === null) {
         return false;
     }
-
-    $fs = $result->fetch_assoc();
-    $db->destroy();
 
     $friends = JsonHelper::safeDecode($fs['friends'], true, []);
     $boughtCount = (int) $fs['bought_count'];

@@ -1,17 +1,12 @@
 <?php 
-require_once AMFPHP_ROOTPATH . "Helpers/globals.php";
-require_once AMFPHP_ROOTPATH . "Helpers/database.php";
 require_once AMFPHP_ROOTPATH . "Helpers/user_resources.php";
 require_once AMFPHP_ROOTPATH . "Helpers/general_functions.php";
 
-// TODO: adjust structure
 class MarketTransactions {
     private $uid = null;
-    private $db = null;
 
     public function __construct($pid) {
         $this->uid = $pid;
-        $this->db = new Database();
     }
 
     public function newTransaction(string $type, object $data){

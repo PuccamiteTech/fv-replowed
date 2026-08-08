@@ -1,5 +1,5 @@
 <?php
-require_once AMFPHP_ROOTPATH . "Helpers/globals.php";
+require_once AMFPHP_ROOTPATH . "Helpers/database.php";
 
 // user resources can help a user progress
 class UserResources{
@@ -15,40 +15,26 @@ class UserResources{
     private static $resourceCache = [];
 
     private static function addResource($uid, $amount, $field, $max){
-        global $db;
-
         if (!is_numeric($uid) || !is_int($amount) || $amount <= 0){
             return false;
         }
 
-        $conn = $db->getDb();
-        $stmt = $conn->prepare("UPDATE usermeta SET $field = LEAST($field + ?, ?) WHERE uid = ?");
-        $stmt->bind_param("iis", $amount, $max, $uid);
-        $stmt->execute();
-        $db->destroy();
+        $result = Database::query("UPDATE usermeta SET $field = LEAST($field + ?, ?) WHERE uid = ?", [$amount, $max, $uid], "iis");
         self::invalidateCache($uid);
-        return true;
+        return ($result !== null);
     }
 
     private static function removeResource($uid, $amount, $field){
-        global $db;
-
         if (!is_numeric($uid) || !is_int($amount) || $amount <= 0){
             return false;
         }
 
-        $conn = $db->getDb();
-        $stmt = $conn->prepare("UPDATE usermeta SET $field = GREATEST($field - ?, 0) WHERE uid = ?");
-        $stmt->bind_param("is", $amount, $uid);
-        $stmt->execute();
-        $db->destroy();
+        $result = Database::query("UPDATE usermeta SET $field = GREATEST($field - ?, 0) WHERE uid = ?", [$amount, $uid], "is");
         self::invalidateCache($uid);
-        return true;
+        return ($result !== null);
     }
 
     private static function getResource($uid, $field){
-        global $db;
-
         if (!is_numeric($uid)){
             return false;
         }
@@ -57,14 +43,7 @@ class UserResources{
             return $resourceCache[$uid][$field];
         }
 
-        $conn = $db->getDb();
-        $stmt = $conn->prepare("SELECT $field FROM usermeta WHERE uid = ?");
-        $stmt->bind_param("s", $uid);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        $db->destroy();
-
+        $row = Database::query("SELECT $field FROM usermeta WHERE uid = ?", [$uid], "s", Database::FETCH_ONE);
         return ($resourceCache[$uid][$field] = $row[$field]);
     }
 

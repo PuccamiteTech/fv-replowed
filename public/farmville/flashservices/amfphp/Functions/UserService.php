@@ -1,14 +1,11 @@
 <?php 
 
-require_once AMFPHP_ROOTPATH . "Helpers/globals.php";
+require_once AMFPHP_ROOTPATH . "Helpers/database.php";
 require_once AMFPHP_ROOTPATH . "Helpers/player.php";
 require_once AMFPHP_ROOTPATH . "Helpers/market_transactions.php";
 
 class UserService{
-    function __construct()
-    {
-        
-    }
+    function __construct() {}
 
     public static function initUser($playerObj, $request){
         $data["zySig"] = array(
@@ -132,17 +129,11 @@ class UserService{
     }
 
     public static function setSeenFlag($player, $request){
-        global $db;
         $uid = $player->getUid();
 
         if (is_numeric($uid)){            
             // Let's get our current seenFlags
-            $conn = $db->getDb();
-            $stmt = $conn->prepare("SELECT seenFlags FROM usermeta WHERE uid = ?");
-            $stmt->bind_param("s", $uid);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $row = $result->fetch_assoc();
+            $row = Database::query("SELECT seenFlags FROM usermeta WHERE uid = ?", [$uid], "s", Database::FETCH_ONE);
             
             // Unserialize it
             $flags = unserialize($row["seenFlags"]);
@@ -153,10 +144,7 @@ class UserService{
             // Add the next one
             $flags[$toAdd] = true;
             $flags = serialize($flags);
-            $stmt = $conn->prepare("UPDATE usermeta SET seenFlags = ? WHERE uid = ?");
-            $stmt->bind_param("ss", $flags, $uid);
-            $stmt->execute();
-            $db->destroy();
+            Database::query("UPDATE usermeta SET seenFlags = ? WHERE uid = ?", [$flags, $uid], "ss");
         }
         return [];
     }

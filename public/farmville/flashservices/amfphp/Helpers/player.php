@@ -3,17 +3,14 @@ require_once AMFPHP_ROOTPATH . "Helpers/database.php";
 require_once AMFPHP_ROOTPATH . "Helpers/general_functions.php";
 
 class Player {
-
     private $uid = null;
     private $pData = array();
     private $worldData = array();
     private $avatarData = array();
     private $avatarUnlocks = array();
-    private $db = null;
 
     public function __construct($id) {
         $this->uid = $id;
-        $this->db = new Database();
     }
 
     public function getUid(){
@@ -24,13 +21,7 @@ class Player {
     public function getData($requ) {
         // either the database will have the expected data, or it won't
         // not going to bother validating further
-        $conn = $this->db->getDb();
-        $stmt = $conn->prepare("SELECT * FROM usermeta WHERE uid = ?");
-        $stmt->bind_param("s", $this->uid);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        $this->db->destroy();
+        $row = Database::query("SELECT * FROM usermeta WHERE uid = ?", [$this->uid], "s", Database::FETCH_ONE);
 
         $currentWorldType = get_meta($this->uid, "currentWorldType") ? get_meta($this->uid, "currentWorldType") : "farm";
         $currentWorld = getWorldByType($this->uid, $currentWorldType);
@@ -409,14 +400,8 @@ class Player {
         $this->avatarData = null;
 
         if (is_numeric($this->uid)){
-            $conn = $this->db->getDb();
-            $stmt = $conn->prepare("SELECT value FROM useravatars WHERE uid = ?");
-            $stmt->bind_param("s", $this->uid);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $row = $result->fetch_assoc();
+            $row = Database::query("SELECT value FROM useravatars WHERE uid = ?", [$this->uid], "s", Database::FETCH_ONE);
             $this->avatarData = ($row["value"] != null) ? unserialize($row["value"]) : null;
-            $this->db->destroy();
         }
 
         return $this->avatarData;
@@ -426,14 +411,8 @@ class Player {
         $this->avatarUnlocks = null;
 
         if (is_numeric($this->uid)){
-            $conn = $this->db->getDb();
-            $stmt = $conn->prepare("SELECT unlocks FROM useravatars WHERE uid = ?");
-            $stmt->bind_param("s", $this->uid);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $row = $result->fetch_assoc();
+            $row = Database::query("SELECT unlocks FROM useravatars WHERE uid = ?", [$this->uid], "s", Database::FETCH_ONE);
             $this->avatarUnlocks = ($row["unlocks"] != null) ? unserialize($row["unlocks"]) : null;
-            $this->db->destroy();
         }
 
         return $this->avatarUnlocks;
@@ -543,12 +522,9 @@ class Player {
         $objects = serialize($currWorld["objectsArray"]);
         
         // No need for further validation (Would have already failed)
-        $conn = $this->db->getDb();
-        $stmt = $conn->prepare("UPDATE userworlds SET objects = ?, sizeX = ?, sizeY = ? WHERE uid = ? AND type = ?");
-        $stmt->bind_param("siiss", $objects, $currWorld["sizeX"], $currWorld["sizeY"], $this->uid, $currentWorldType);
-        $stmt->execute();
-        $this->db->destroy();
-    
+        Database::query("UPDATE userworlds SET objects = ?, sizeX = ?, sizeY = ? WHERE uid = ? AND type = ?",
+            [$objects, $currWorld["sizeX"], $currWorld["sizeY"], $this->uid, $currentWorldType], "siiss");
+
         if ($newId > 0){
             return $newId;
         }
@@ -559,22 +535,14 @@ class Player {
     public function setAvatar($attribs){
         if (is_numeric($this->uid) && is_array($attribs)){
             $attribs = serialize($attribs);
-            $conn = $this->db->getDb();
-            $stmt = $conn->prepare("UPDATE useravatars SET value = ? WHERE uid = ?");
-            $stmt->bind_param("ss", $attribs, $this->uid);
-            $stmt->execute();
-            $this->db->destroy();
+            Database::query("UPDATE useravatars SET value = ? WHERE uid = ?", [$attribs, $this->uid], "ss");
         }
     }
 
     public function setAvatarUnlocks($unlocks){
         if (is_numeric($this->uid) && is_array($unlocks)){
             $unlocks = serialize($unlocks);
-            $conn = $this->db->getDb();
-            $stmt = $conn->prepare("UPDATE useravatars SET unlocks = ? WHERE uid = ?");
-            $stmt->bind_param("ss", $unlocks, $this->uid);
-            $stmt->execute();
-            $this->db->destroy();
+            Database::query("UPDATE useravatars SET unlocks = ? WHERE uid = ?", [$unlocks, $this->uid], "ss");
         }
     }
 
@@ -582,17 +550,8 @@ class Player {
         $rows = [];
 
         if (is_numeric($this->uid)){
-            $conn = $this->db->getDb();
-            $stmt = $conn->prepare("SELECT us.uid as uid, um.firstName as firstname, um.lastName as lastname FROM users AS us INNER JOIN usermeta AS um ON us.uid = um.uid WHERE us.uid <> ?");
-            $stmt->bind_param("s", $this->uid);
-            $stmt->execute();
-            $result = $stmt->get_result();
-
-            if ($result){
-                $rows = $result->fetch_all(MYSQLI_ASSOC);
-            }
-            
-            $this->db->destroy();
+            $rows = Database::query("SELECT us.uid AS uid, um.firstName AS firstname, um.lastName AS lastname FROM users AS us INNER JOIN usermeta AS um ON us.uid = um.uid WHERE us.uid <> ?",
+                [$this->uid], "s", Database::FETCH_ALL);
         }
 
         return $rows;
@@ -651,13 +610,8 @@ class Player {
 
     public function getPlayerData($uid){
         if (is_numeric($uid)){
-            $conn = $this->db->getDb();
-            $stmt = $conn->prepare("SELECT us.uid AS uid, um.firstName AS firstname, um.lastName AS lastname, um.xp AS xp, ua.value AS avatar FROM users AS us INNER JOIN usermeta AS um ON us.uid = um.uid INNER JOIN useravatars AS ua ON us.uid = ua.uid WHERE us.uid = ?");
-            $stmt->bind_param("s", $uid);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $row = $result->fetch_assoc();
-            $this->db->destroy();
+            $row = Database::query("SELECT us.uid AS uid, um.firstName AS firstname, um.lastName AS lastname, um.xp AS xp, ua.value AS avatar FROM users AS us INNER JOIN usermeta AS um ON us.uid = um.uid INNER JOIN useravatars AS ua ON us.uid = ua.uid WHERE us.uid = ?",
+                [$uid], "s", Database::FETCH_ONE);
             
             // if the row's contents are invalid, loading SHOULD fail
             return (object) [
