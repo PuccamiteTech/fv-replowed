@@ -11,6 +11,7 @@ class UserResources{
     public const GOLD_MAX = 999_999_999; // specified by the engine
     public const CASH_MAX = 99_999; // specified by the engine
     public const XP_MAX = 2_147_400_000; // minimum points required to reach the highest level
+    public const ENERGYMAX_MAX = 2_147_483_647; // TODO: verify
 
     private static $resourceCache = [];
 

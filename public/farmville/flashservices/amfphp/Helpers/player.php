@@ -631,4 +631,16 @@ class Player {
 
         return (object) [];
     }
+
+    public function expandWorld($newSizeX, $newSizeY){
+        $currentWorldType = getCurrentWorldType($this->uid);
+        $currentWorld = (empty($this->worldData)) ? getWorldByType($this->uid, $currentWorldType) : $this->worldData;
+        $currentWorld["sizeX"] = $newSizeX;
+        $currentWorld["sizeY"] = $newSizeY;
+        $this->worldData = $currentWorld;
+
+        saveWorld($this->uid, $this->worldData, $currentWorldType);
+    
+        return $currentWorld;
+    }
 }

@@ -9,7 +9,7 @@ require_once AMFPHP_ROOTPATH . "Functions/DailyStatsService.php";
 //require_once AMFPHP_ROOTPATH . "Functions/EquipmentWorldService.php";
 require_once AMFPHP_ROOTPATH . "Functions/FarmExpressZMCService.php";
 require_once AMFPHP_ROOTPATH . "Functions/FarmQuestService.php";
-//require_once AMFPHP_ROOTPATH . "Functions/FarmService.php";
+require_once AMFPHP_ROOTPATH . "Functions/FarmService.php";
 require_once AMFPHP_ROOTPATH . "Functions/FBRequestService.php";
 require_once AMFPHP_ROOTPATH . "Functions/FertilizerService.php";
 require_once AMFPHP_ROOTPATH . "Functions/FleaMarketService.php";
