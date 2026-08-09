@@ -1,7 +1,7 @@
 <?php
 require_once AMFPHP_ROOTPATH . "Helpers/player.php";
 require_once AMFPHP_ROOTPATH . "Helpers/market_transactions.php";
-//require_once AMFPHP_ROOTPATH . "Helpers/quest_helper.php";
+require_once AMFPHP_ROOTPATH . "Helpers/quest_helper.php";
 
 require_once AMFPHP_ROOTPATH . "Functions/AvatarService.php";
 //require_once AMFPHP_ROOTPATH . "Functions/CraftingService.php";
@@ -51,7 +51,7 @@ class FlashService {
         }
 
         // Build QuestComponent once for all requests (same player)
-        //$questComponent = buildQuestComponent($player->getUid());
+        $questComponent = buildQuestComponent($player->getUid());
 
         foreach ($reqData as $key => $requ){
             $data[$key] = array(
@@ -61,33 +61,8 @@ class FlashService {
                 "worldTime" => time()
             );
             $data[$key]["metadata"] = array(
-                "QuestComponent" => [
-                    [
-                        'name'      => "beatHauntedHallow-01-001",
-                        'progress'  => [
-                            0 => '0',  
-                            1 => '0',  
-                            2 => '0',  
-                            3 => '0',  
-                            4 => '0',  
-                            5 => '0',  
-                            6 => '0',  
-                            7 => '0',  
-                            8 => '0',  
-                            9 => '0',  
-                            10 => '0',  
-                            11 => '0',  
-                            12 => '0',  
-                            13 => '0',  
-                            14 => '0',  
-                            
-                        ],
-                        'removed'   => false,
-                        'expired'   => false,
-                        'completed' => false
-                    ]
-                ]
-             );
+                "QuestComponent" => $questComponent
+            );
 
             try{
                 $fn_details = explode(".", $requ->functionName);
