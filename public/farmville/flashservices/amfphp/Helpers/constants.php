@@ -156,6 +156,10 @@ define('NEIGHBOR_ACTION_TRICK', 'trickneighbor');
 define('LIMIT_KEY_FARM', 'farm');
 define('LIMIT_KEY_FEED', 'feed');
 
+define('IRRIGATION_META_KEY', 'irrigation_data');
+define('IRRIGATION_DEFAULT_WATER', 20);
+define('IRRIGATION_MAX_WATER', 2000);
+
 function isPositionBasedAction($action) {
     return in_array($action, [ACTION_PLANT, ACTION_HARVEST, ACTION_REMOVE, ACTION_COMBINE]);
 }

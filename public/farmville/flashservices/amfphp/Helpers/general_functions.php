@@ -363,3 +363,20 @@
         }
         saveGiftBox($uid, $giftbox);
     }
+
+function removeGiftByCode($uid, $itemCode, $quantity = 1) {
+        $giftbox = getGiftBox($uid);
+
+        if (!isset($giftbox[$itemCode]) || $giftbox[$itemCode][0] < $quantity) {
+            return false;
+        }
+
+        $giftbox[$itemCode][0] -= $quantity;
+
+        if ($giftbox[$itemCode][0] <= 0) {
+            unset($giftbox[$itemCode]);
+        }
+
+        saveGiftBox($uid, $giftbox);
+        return true;
+    }

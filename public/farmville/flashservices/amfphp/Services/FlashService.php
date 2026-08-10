@@ -16,7 +16,7 @@ require_once AMFPHP_ROOTPATH . "Functions/FleaMarketService.php";
 require_once AMFPHP_ROOTPATH . "Functions/FriendListService.php";
 require_once AMFPHP_ROOTPATH . "Functions/FriendSetService.php";
 require_once AMFPHP_ROOTPATH . "Functions/FVV10AnniversaryBirthdayCardService.php";
-//require_once AMFPHP_ROOTPATH . "Functions/IrrigationService.php";
+require_once AMFPHP_ROOTPATH . "Functions/IrrigationService.php";
 require_once AMFPHP_ROOTPATH . "Functions/LeaderboardService.php";
 require_once AMFPHP_ROOTPATH . "Functions/LonelyAnimalFriendSetService.php";
 require_once AMFPHP_ROOTPATH . "Functions/LonelyCowService.php";
